@@ -1,0 +1,192 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © teamtomkins23
+
+// Description
+// This indicator creates a moving average channel using the high and low price.
+// An additional faster ema is plotted as a line to help identify when the trend is changing.
+// The moving averages can be calculated from a different timeframe than the current chart.
+
+// Display Settings
+// This indicator will default to 
+// - Channel - 50 EMA High and Low 
+// - Moving Average - 21 EMA
+// - ADX - 14 Length and 20 Baseline
+//
+// Colors for each plot are configurable via the indicator settings menu
+
+//@version=5
+indicator("MA High/Low", "MA H/L", overlay=true)
+
+//
+// Utils
+//
+getMA(maType, source, period) =>
+    if maType == "SMA"
+        ta.sma(source, period)
+    else if maType == "EMA"
+        ta.ema(source, period)
+    else if maType == "WMA"
+        ta.wma(source, period)
+    else if maType == "RMA"
+        ta.rma(source, period)
+
+
+//
+// Inputs
+//
+// Chart Interval
+channel_high_src = input(high, "Top", inline = "Channel Top", group = "Channel")
+channel_high_ma_type = input.string("EMA", "", options = ["SMA", "EMA", "WMA", "RMA"], inline = "Channel Top", group = "Channel")
+channel_high_ma_length = input.int(50, "", inline = "Channel Top", group = "Channel", minval = 1)
+channel_low_src = input(low, "Bottom", inline = "Channel Bottom", group = "Channel")
+channel_low_ma_type = input.string("EMA", "", options = ["SMA", "EMA", "WMA", "RMA"], inline = "Channel Bottom", group = "Channel")
+channel_low_ma_length = input.int(50, "", inline = "Channel Bottom", group = "Channel", minval = 1)
+channel_chart_interval = input.timeframe("60", "Chart Interval", tooltip = "Select the timeframe to calculate moving averages from", group = "Channel")
+channel_bullish_color = input.color(color.new(#2962ff, 89), "Bullish", group = "Channel")
+channel_neutral_color = input.color(color.new(#b2b5be, 89), "Neutral", group = "Channel")
+channel_bearish_color = input.color(color.new(#512da9, 87), "Bearish", group = "Channel")
+
+// Roaming Average
+roaming_avg_length = input(21, title="Length", group = "Moving Average")
+roaming_avg_src = input(close, "Moving Average", group = "Moving Average")
+roaming_avg_type = input.string("EMA", "Moving Average Type", ["SMA", "EMA", "WMA", "RMA"], group="Moving Average")
+roaming_avg_chart_interval = input.timeframe("15", "Chart Interval", tooltip = "Select the timeframe to calculate moving average from", group = "Moving Average")
+
+// ADX
+adx_period = input(14, title="ADX Length", group="ADX")
+adx_baseline_value = input(20, title="Baseline", group="ADX")
+
+// ATR
+atr_period = input(20, title="ATR Length", group="ATR")
+
+// Labels
+should_show_strategy_labels = input.bool(true, "Strategy Table", tooltip = "Shows Strategy table, in bottom left corner, colorized based on strategy rules", group= "Labels")
+
+
+//
+// Math
+//
+// Get data from the selected chart interva
+htf_high = request.security(syminfo.tickerid, channel_chart_interval, high)
+htf_low = request.security(syminfo.tickerid, channel_chart_interval, low)
+htf_close = request.security(syminfo.tickerid, channel_chart_interval, close)
+roaming_avg = request.security(syminfo.tickerid, roaming_avg_chart_interval, close)
+
+// Calculate moving averages using higher timeframe data
+plotEmaHigh = getMA(channel_high_ma_type, htf_high, channel_high_ma_length)
+plotEmaLow = getMA(channel_low_ma_type, htf_low, channel_low_ma_length)
+plotMovingAverage = getMA(roaming_avg_type, roaming_avg, roaming_avg_length)
+plotAtr = ta.atr(atr_period)
+
+[_, _, plotAdx] = ta.dmi(adx_period, adx_period)
+isAdxAboveBaseline = plotAdx >= adx_baseline_value
+
+//
+// Render utils
+//
+getChannelFillColor() => 
+    if close > plotEmaLow 
+        if close > plotEmaHigh
+            channel_bullish_color
+        else
+            channel_neutral_color
+    else if close < plotEmaHigh
+        if close < plotEmaLow
+            channel_bearish_color
+        else
+            channel_neutral_color
+
+getChannelLabelColor() => 
+    if close > plotEmaLow 
+        if close > plotEmaHigh
+            color.green
+        else
+            color.black
+    else if close < plotEmaHigh
+        if close < plotEmaLow
+            color.green
+        else
+            color.black
+
+getChannelLabelText() =>
+    if close > plotEmaLow 
+        if close > plotEmaHigh
+            "Long"
+        else
+            "n/a"
+    else if close < plotEmaHigh
+        if close < plotEmaLow
+            "Short"
+        else
+            "n/a"
+
+getRoamingAverageLabelColor() => 
+    if plotMovingAverage > plotEmaLow 
+        if plotMovingAverage > plotEmaHigh
+            color.green
+        else
+            color.black
+    else if plotMovingAverage < plotEmaHigh
+        if plotMovingAverage < plotEmaLow
+            color.green
+        else
+            color.black
+
+getRoamingAverageLabelText() => 
+    if plotMovingAverage > plotEmaLow 
+        if plotMovingAverage > plotEmaHigh
+            "Long"
+        else
+            "Neutral"
+    else if plotMovingAverage < plotEmaHigh
+        if plotMovingAverage < plotEmaLow
+            "Short"
+        else
+            "Neutral"
+
+getAdxLabelColor() =>
+    var confirmationDistanceAsPercentage = 0.1
+    var adx_baseline_valuePlusConfirmationDistance = adx_baseline_value * confirmationDistanceAsPercentage
+
+    if plotAdx <= adx_baseline_value - adx_baseline_valuePlusConfirmationDistance
+        color.red
+    else if plotAdx > adx_baseline_value + adx_baseline_valuePlusConfirmationDistance
+        color.green
+    else
+        color.black
+
+getAtrLabelColor() =>
+    var lowAtrValue = 5
+    var midAtrValue = 10
+
+    if plotAtr < lowAtrValue
+        color.red
+    else if plotAtr >= lowAtrValue and plotAtr < midAtrValue
+        color.gray
+    else if plotAtr >= midAtrValue
+        color.green
+    else
+        color.black
+
+//
+// Render
+// 
+maPlot = plot(plotMovingAverage, color=color.new(#5b9cf6, 10), style=plot.style_line, linewidth=2, title="Moving Average")
+ema1plot = plot(plotEmaHigh, color=color.new(#666666, 25), style=plot.style_line, linewidth=1, title='Channel High', editable = false)
+ema2plot = plot(plotEmaLow, color=color.new(#666666, 25), style=plot.style_line, linewidth=1, title='Channel Low', editable = false)
+labelTable = table.new(position = position.bottom_left, columns = 4, rows = 2, bgcolor = #333333, border_width = 1)
+
+fill(ema1plot, ema2plot, color=getChannelFillColor())
+
+if barstate.islast and should_show_strategy_labels
+    table.cell(table_id = labelTable, column = 0, row = 0, text = "Channel", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 0, row = 1, text = getChannelLabelText(), bgcolor=getChannelLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    
+    table.cell(table_id = labelTable, column = 1, row = 0, text = "AVG", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 1, row = 1, text = getRoamingAverageLabelText(), bgcolor=getRoamingAverageLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    
+    table.cell(table_id = labelTable, column = 2, row = 0, text = "ADX", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 2, row = 1, text = str.tostring(math.round(plotAdx, 0)), bgcolor=getAdxLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    
+    table.cell(table_id = labelTable, column = 3, row = 0, text = "ATR", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 3, row = 1, text = str.tostring(math.round(plotAtr, 0)), bgcolor=getAtrLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)

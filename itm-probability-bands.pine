@@ -1,0 +1,89 @@
+//@version=6
+indicator("ITM Probability Bands", overlay=true)
+
+// === Constants ===
+const int DEFAULT_EXPIRY_DATE = 1729123200000  // October 17, 2025 00:00 UTC
+
+// === Inputs ===
+strike_price = input.float(25.0, title="Strike Price")
+expiry_date = input.time(DEFAULT_EXPIRY_DATE, title="Expiration Date")
+lookback_weeks = input.int(2, title="Lookback Weeks", minval=1, maxval=8)
+use_custom_iv = input.bool(true, title="Use Custom IV?")
+custom_iv = input.float(0.50, title="Implied Volatility (decimal)", minval=0.01)
+risk_free_rate = input.float(0.04, title="Risk-Free Rate", minval=0)
+
+positive_color = input.color(color.green, title="Call Band Color")
+negative_color = input.color(color.red, title="Put Band Color")
+
+// === Derived Inputs ===
+days_to_expiry = math.max(1, (expiry_date - time) / (1000 * 60 * 60 * 24))  // Convert milliseconds to days
+t = days_to_expiry / 365
+iv = use_custom_iv ? custom_iv : ta.atr(14) / close  // fallback to ATR-based approximation
+
+// === Time Window Logic ===
+lookback_days = lookback_weeks * 7
+show_bands = days_to_expiry <= lookback_days and days_to_expiry >= 0
+
+// Debug: Show days to expiry in data window
+plotchar(days_to_expiry, title="Days to Expiry", location=location.top, offset=-9999)
+plotchar(show_bands ? 1 : 0, title="Show Bands", location=location.top, offset=-9998)
+
+// === Functions ===
+
+// @description Custom implementation of the cumulative distribution function (CDF) of the standard normal distribution
+// @param x The input value for which to calculate the CDF
+// @returns The probability that a standard normal random variable is less than or equal to x
+// @reference Abramowitz and Stegun approximation: https://en.wikipedia.org/wiki/Normal_distribution#Cumulative_distribution_function
+// @note This function is needed because math.normcdf() was deprecated in Pine Script v5 and math.cdf() has compatibility issues in v6
+normcdf(x) =>
+    // Approximation of the cumulative distribution function of the standard normal distribution
+    a1 = 0.254829592
+    a2 = -0.284496736
+    a3 = 1.421413741
+    a4 = -1.453152027
+    a5 = 1.061405429
+    p = 0.3275911
+    
+    sign = x >= 0 ? 1 : -1
+    abs_x = math.abs(x) / math.sqrt(2.0)
+    
+    temp_t = 1.0 / (1.0 + p * abs_x)
+    y = 1.0 - (((((a5 * temp_t + a4) * temp_t) + a3) * temp_t + a2) * temp_t + a1) * temp_t * math.exp(-abs_x * abs_x)
+    
+    0.5 * (1.0 + sign * y)
+
+// === Math (Black-Scholes d2) ===
+lnSK = math.log(close / strike_price)
+d2 = (lnSK + (risk_free_rate - math.pow(iv, 2) / 2) * t) / (iv * math.sqrt(t))
+call_prob = normcdf(d2)
+put_prob = normcdf(-d2)
+
+// === Probability Bands (converging to strike price) ===
+// Calculate bands that show where price is likely to be at expiration
+// These bands start wide and narrow toward the strike price as time approaches expiration
+
+// Standard deviation decreases as we approach expiration
+std_dev = iv * math.sqrt(t)
+
+// For 68% confidence (1σ): Price has 68% chance of being within 1 standard deviation
+upper_68 = strike_price + (strike_price * std_dev)
+lower_68 = strike_price - (strike_price * std_dev)
+
+// For 95% confidence (2σ): Price has 95% chance of being within 2 standard deviations  
+upper_95 = strike_price + (2 * strike_price * std_dev)
+lower_95 = strike_price - (2 * strike_price * std_dev)
+
+// === Plot Probability Bands ===
+// Test plots to verify script is running
+plot(upper_95, color=color.blue, title="Upper 95% Band", linewidth=3, style=plot.style_line)
+plot(lower_95, color=color.purple, title="Lower 95% Band", linewidth=3, style=plot.style_line)
+plot(upper_68, color=color.green, title="Upper 68% Band", linewidth=3, style=plot.style_line)
+plot(lower_68, color=color.red, title="Lower 68% Band", linewidth=3, style=plot.style_line)
+
+// Always show strike price and current price
+plot(strike_price, color=color.yellow, title="Strike Price", linewidth=2, style=plot.style_line)
+plot(close, color=color.gray, title="Current Price", linewidth=1, style=plot.style_line)
+
+// === Show ITM probabilities in Data Window ===
+plotchar(call_prob * 100, title="Call ITM %", location=location.bottom, offset=-9999)
+plotchar(put_prob * 100, title="Put ITM %", location=location.bottom, offset=-9999)

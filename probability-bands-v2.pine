@@ -1,0 +1,52 @@
+//@version=6
+indicator("Probability Bands V2", overlay=true)
+
+// === Inputs ===
+strike_price = input.float(30.0, title="Strike Price")
+expiry_date = input.time(1750204800000, title="Expiration Date")  // Oct 17, 2025
+lookback_weeks = input.int(4, title="Lookback Weeks", minval=1, maxval=52)
+custom_iv = input.float(0.50, title="Implied Volatility (decimal)", minval=0.01)
+
+// === Calculate time to expiration ===
+days_to_expiry = (expiry_date - time) / (1000 * 60 * 60 * 24)
+t = days_to_expiry / 365
+
+// === Time window logic ===
+lookback_days = lookback_weeks * 7
+// Show bands only within the lookback window before expiration
+// We want to show bands from (expiration - lookback_weeks) to expiration
+// But NOT past the expiration date
+show_bands = days_to_expiry > 0 and days_to_expiry <= lookback_days
+
+// === Probability bands calculation ===
+// Standard deviation decreases as we approach expiration
+std_dev = custom_iv * math.sqrt(t)
+
+// Calculate bands that start at strike price and widen as we go back in time
+// Using proper log-normal distribution for options pricing
+upper_band = strike_price * math.exp(std_dev)
+lower_band = strike_price * math.exp(-std_dev)
+
+// === Plot ===
+// Always show strike price
+plot(strike_price, color=color.yellow, linewidth=2, title="Strike Price")
+
+// Show current price
+plot(close, color=color.gray, linewidth=1, title="Current Price")
+
+// Show bands only within the lookback window
+// Use plot with offset to extend lines into the future
+plot(show_bands ? upper_band : na, color=color.red, linewidth=1, title="Upper Band", offset=0)
+plot(show_bands ? lower_band : na, color=color.green, linewidth=1, title="Lower Band", offset=0)
+
+// Draw lines that extend to the expiration date
+if show_bands and barstate.islast
+    // Calculate how many bars to extend
+    bars_to_expiry = math.round(days_to_expiry)
+    
+    // Draw lines from current position to expiration
+    line.new(bar_index, upper_band, bar_index + bars_to_expiry, strike_price, 
+             color=color.red, width=1, style=line.style_solid, extend=extend.none)
+    line.new(bar_index, lower_band, bar_index + bars_to_expiry, strike_price,
+             color=color.green, width=1, style=line.style_solid, extend=extend.none)
+

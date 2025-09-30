@@ -1,0 +1,66 @@
+//@version=6
+indicator(title="On Balance Volume Squeeze", shorttitle="OBVS", format=format.volume, timeframe="", timeframe_gaps=true)
+
+//
+// Inputs
+//
+// Smoothing MA inputs
+smoothingGroupName = "Smoothing"
+BBStdevTooltip = "Only applies when 'SMA + Bollinger Bands' is selected. Determines the distance between the SMA and the bands."
+
+maTypeInput = input.string("SMA + Bollinger Bands", "Type", options = ["None", "SMA", "SMA + Bollinger Bands", "EMA", "SMMA (RMA)", "WMA", "VWMA"], group = smoothingGroupName, display = display.data_window)
+maLengthInput = input.int(20, "Length", group = smoothingGroupName, display = display.data_window)
+bbMultInput = input.float(2.0, "BB StdDev", minval = 0.001, maxval = 50, step = 0.5, tooltip = BBStdevTooltip, group = smoothingGroupName, display = display.data_window)
+
+//
+// Variables
+//
+var enableMA = maTypeInput != "None"
+var isBB = maTypeInput == "SMA + Bollinger Bands"
+
+//
+// Functions
+//
+// Smoothing MA Calculation
+ma(source, length, MAtype) =>
+    switch MAtype
+        "SMA"                   => ta.sma(source, length)
+        "SMA + Bollinger Bands" => ta.sma(source, length)
+        "EMA"                   => ta.ema(source, length)
+        "SMMA (RMA)"            => ta.rma(source, length)
+        "WMA"                   => ta.wma(source, length)
+        "VWMA"                  => ta.vwma(source, length)
+
+//
+// Calculations
+//
+var cumVol = 0.
+cumVol += nz(volume)
+
+if barstate.islast and cumVol == 0
+    runtime.error("No volume is provided by the data vendor.")
+
+src = close
+obv = ta.cum(math.sign(ta.change(src)) * volume)
+
+// Smoothing MA plots
+smoothingMA = enableMA ? ma(obv, maLengthInput, maTypeInput) : na
+smoothingStDev = isBB ? ta.stdev(obv, maLengthInput) * bbMultInput : na
+
+// Distance between upper and lower band
+bandWidth = smoothingStDev * 2
+// Check if Bollinger Bands width is low
+// Compare current band width with the historical average
+hasLowBandWidth = bandWidth < ta.sma(bandWidth, maLengthInput)  
+bbColor = hasLowBandWidth ? color.orange : color.rgb(74, 74, 74)
+
+//
+// Render
+//
+plot(obv, color=#2962FF, title="OnBalanceVolume", style = plot.style_stepline)
+
+plot(smoothingMA, "OBV MA", color=color.rgb(255, 0, 255), display = enableMA ? display.all : display.none, editable = enableMA, style = plot.style_line, linewidth = 1)
+
+// Plot the upper and lower Bollinger Bands
+plot(smoothingMA + smoothingStDev, title = "Upper Bollinger Band Squeezing", color=bbColor, linewidth=1, editable = isBB)
+plot(smoothingMA - smoothingStDev, title = "Lower Bollinger Band Squeezing", color=bbColor, linewidth=1, editable = isBB)
