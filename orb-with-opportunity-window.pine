@@ -9,43 +9,51 @@ indicator("Opening Range with Breakouts, Targets & Opportunity Window", shorttit
 // ---------------------------------------------------------------------------------------------------------------------}
 // inputs
 // ---------------------------------------------------------------------------------------------------------------------{
-
 // Historical Display
 showHist = input.bool(false, title = "Show Historical Data", group = "Historical Display", tooltip = "Displays All Data from Previous Sessions")
 
+
 // Opening Range
 orSizeTargetInputGroup = "Opening Range Size Target"
-orTimePeriod = input.timeframe("60", title = "Time Period", group = "Opening Range", tooltip = "Sets the Length of Time used for determining Opening Range.") 
+orTimePeriod = input.timeframe("60", title = "Length", group = "Opening Range", tooltip = "Sets the Length of Time used for determining Opening Range") 
+customRangeSession = input.session("0830-0930", title = "Opening Range Timeframe", group = orSizeTargetInputGroup)
+tz = input.string("UTC-5", title = "Timezone", group = orSizeTargetInputGroup, options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6","UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"])
+
 
 // Opening Range Size (% of current price)
 orSizePct = input.float(0.2, minval = 0.0, step = 0.01, title = "Opening Range Size (%)", group = orSizeTargetInputGroup)
-sizeGoodColor = input.color(color.new(#00ff00, 90), title = ">= Size (Good)", group = orSizeTargetInputGroup)
-sizeBadColor = input.color(color.new(#ff0000, 90), title = "< Size (Bad)", group = orSizeTargetInputGroup)
+sizeGoodColor = input.color(color.new(#00ff00, 90), title = "Good Range Size", group = orSizeTargetInputGroup, tooltip = "Color when opening range size meets or exceeds target")
+sizeBadColor = input.color(color.new(#ff0000, 90), title = "Poor Range Size", group = orSizeTargetInputGroup, tooltip = "Color when opening range size is below target")
 sizeNeutralColor = input.color(color.new(color.yellow, 85), title = "Neutral", group = orSizeTargetInputGroup, tooltip = "OR Session has not completed yet")
+shouldShowOrbSizeLabel = input.bool(true, title = "Show ORB Range Size Label", group = orSizeTargetInputGroup, tooltip = "Displays the Opening Range height (Δ value) above the OR box")
 
-// Custom Range
-shouldUseCustomOpeningRange = input.bool(true, title = "", inline = "Custom", group = "Custom Range")
-customRangeSession = input.session("0830-0930", title = "", inline = "Custom", group = "Custom Range")
-tz = input.string("UTC-5", title = "", group = "Custom Range", inline = "Custom", options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6","UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"])
-shouldShowOrbSizeLabel = input.bool(true, title = "Show ORB Range Size Label", group = "Custom Range", tooltip = "Displays the Opening Range height (Δ value) above the OR box")
+
+// Targets
+targetPercentOfRange = input.float(50, minval = 1, title = "Target % of Range", group = "Targets", tooltip = "Uses this % of OR Width to use as the distance for targets.")*0.01
+targetCrossSource = input.string("Close", title = "Target Cross Source", options = ["Close","Highs/Lows"], group = "Targets", tooltip = "Uses this Source to tell the script when a target is hit in order to draw the next target.")
+targetDisplay = input.string("Adaptive", title = "Target Display", options = ["Adaptive","Extended"], group = "Targets", tooltip = "Adaptive: Displays and hides targets Adaptivly based on the current price.\nExtended: Extends all targets to the current bar and does not hide any targets after generation.")
+tStyle = input.string(". . .", title = "Target Line Style", options = [". . .","- - -","___"], group = "Targets")
+txtSize = str.lower(input.string("Normal", title = "Target Label Size", options = ["Tiny","Small","Normal","Large","Huge"], group = "Targets"))
+shouldShowTargets = input.bool(true, title = "Show Targets", group = "Targets")
+
 
 // Opportunity Window
-shouldShowOpportunityWindow = input.bool(true, title = "Show Opportunity Window", group = "Opportunity Window")
-opportunityWindowSession = input.session("0930-1215", title = "Window (Start-End)", group = "Opportunity Window", inline = "OWTime")
+opportunityWindowInputGroup = "Opportunity Window"
+opportunityWindowSession = input.session("0930-1200", title = "Start + End", group = opportunityWindowInputGroup, inline = "OWTime")
+orColor = input.color(color.new(color.white, 40), title = "Opportunity Window Line + Label Color", group = opportunityWindowInputGroup)
+owColor = input.color(color.new(#7b1fa2, 80), title = "Opportunity Window Fill Color", group = opportunityWindowInputGroup)
+shouldShowOpportunityWindowMidline = input.bool(true, "Show Midline", group = opportunityWindowInputGroup)
+shouldShowOpportunityWindow = input.bool(true, title = "Show Opportunity Window", group = opportunityWindowInputGroup)
+
 
 // Breakout Signals
 shouldShowBreakoutSignals = input.bool(true, title = "Show Breakout Signals", group = "Breakout Signals")
 signalBias = input.string("No Bias", title = "Signal Bias", options = ["No Bias","Daily Bias"], group = "Breakout Signals", tooltip = "OR Fill Color is directional based on if the current Day/Session ORM is Above or Below the Previous ORM.\nExamples\nNo Bias: Signals Occur Regardless of OR Color\nDaily Bias: Signals do not fire until Target 1 when Breakout is in opposite direction of OR Color.") == "No Bias" ? false : true
 signalSize = str.lower(input.string("Normal", title = "Signal Size", options = ["Tiny","Small","Normal","Large","Huge"], group = "Breakout Signals"))
-upSignalColor = input.color(color.new(#00ff00, 10), title = "Up Color", group = "Breakout Signals", inline = "Colors")
-downSignalColor = input.color(color.new(#ff0000, 10), title = "Down Color", group = "Breakout Signals", inline = "Colors")
+upSignalColor = input.color(color.new(#00ff00, 10), title = "Up Color", group = "Breakout Signals")
+downSignalColor = input.color(color.new(#ff0000, 10), title = "Down Color", group = "Breakout Signals")
 shouldClampSingalsToOpportunityWindow = input.bool(true, title = "Clamp signals to Opportunity Window", group = "Breakout Signals")
 
-// Targets
-shouldShowTargets = input.bool(true, title = "Show Targets", group = "Targets")
-targetPercentOfRange = input.float(50, minval = 1, title = "Target % of Range", group = "Targets", tooltip = "Uses this % of OR Width to use as the distance for targets.")*0.01
-targetCrossSource = input.string("Close", title = "Target Cross Source", options = ["Close","Highs/Lows"], group = "Targets", tooltip = "Uses this Source to tell the script when a target is hit in order to draw the next target.")
-targetDisplay = input.string("Adaptive", title = "Target Display", options = ["Adaptive","Extended"], group = "Targets", tooltip = "Adaptive: Displays and hides targets Adaptivly based on the current price.\nExtended: Extends all targets to the current bar and does not hide any targets after generation.")
 
 // VWAP
 shouldShowVWAP = input.bool(true, title = "Show VWAP", group = "VWAP")
@@ -54,18 +62,11 @@ vwapColor = input.color(color.new(color.blue, 0), title = "VWAP Color", group = 
 vwapUpperBandColor = input.color(color.new(color.white, 70), title = "Upper Band Color", group = "VWAP")
 vwapLowerBandColor = input.color(color.new(color.white, 70), title = "Lower Band Color", group = "VWAP")
 
+
 // Alerts
 isAlertAboveEnabled = input.bool(true,  title = "Enable Alert: Cross Above ORH", group = "Alerts")
 isAlertBelowEnabled = input.bool(true,  title = "Enable Alert: Cross Below ORL", group = "Alerts")
 
-// Style
-green = input.color(color.new(#00ff00, 40), title = "Bull Target Color", group = "Style", inline = "Bull")
-red = input.color(color.new(#ff0000, 40), title = "Bear Target Color", group = "Style", inline = "Bear")
-orColor = input.color(color.new(color.white, 40), title = "OR Levels Color", group = "Style", inline = "Range")
-owColor = input.color(color.new(#7b1fa2, 80), title = "Fill Color", group = "Opportunity Window", inline = "OWColor")
-orFillColor = input.color(color.new(color.yellow, 90), title = "OR Highlight Color", group = "Style", inline = "Range")
-tStyle = input.string(". . .", title = "Target Style", options = ["___","- - -",". . ."], group = "Style")
-txtSize = str.lower(input.string("Normal", title = "Text Size", options = ["Tiny","Small","Normal","Large","Huge"], group = "Style"))
 invis = color.rgb(0,0,0,100)
 
 //---------------------------------------------------------------------------------------------------------------------}
@@ -115,6 +116,8 @@ var bool  ow_token = false
 var float owh      = na
 var float owl      = na
 var box   ow_bx    = na
+var line  ow_midline = na
+var label ow_midline_label = na
 
 var bool  or_sesh  = false
 var bool  or_token = false
@@ -124,6 +127,7 @@ var float orl = na
 var float hst = na 
 var float lst = na
 var float prev_orm = na
+var int   or_start_bar = na
 
 var int up_count = na
 var int down_count = na
@@ -151,32 +155,27 @@ var float vwap_variance_sum = na
 var float vwap_std_dev = na
 var float vwap_upper_band = na
 var float vwap_lower_band = na
+
 // VWAP session tracking
 var bool vwap_full_session = false
 vwap_session_start = false
 vwap_session_end = false
+
+// Full trading session tracking for midline
+var bool full_trading_session = false
+full_session_start = false
+full_session_end = false
 
 // ---------------------------------------------------------------------------------------------------------------------}
 // Calculations
 // ---------------------------------------------------------------------------------------------------------------------{
 orm = math.avg(orh,orl)
 orw = math.abs(orh-orl)    
-
 h_src = targetCrossSource == "Close" ? close : high
 l_src = targetCrossSource == "Close" ? close : low
-
-// Establishing When the OR Sesssion is
-new_tf = timeframe.change(orTimePeriod)
-if shouldUseCustomOpeningRange
-    or_sesh := not na(time(timeframe.period, customRangeSession, tz))
-else 
-    if session.isfirstbar
-        or_sesh := true
-    else if not session.isfirstbar and new_tf
-        or_sesh := false
-
+or_sesh := not na(time(timeframe.period, customRangeSession, tz))
 or_start = or_sesh and not or_sesh[1]
-or_end   = or_sesh[1] and not or_sesh
+or_end = or_sesh[1] and not or_sesh
 
 // On Start of OR Session
 if or_start
@@ -197,6 +196,8 @@ if or_start
         h_ln.ln.delete()
         l_ln.ln.delete()
         m_ln.delete()
+        ow_midline.delete()
+        ow_midline_label.delete()
 
     h_ln.lab.delete()
     l_ln.lab.delete()
@@ -210,6 +211,7 @@ if or_start
 
     orh := high
     orl := low
+    or_start_bar := bar_index
     prev_orm := orm[1]
     up_count := 0
     down_count := 0
@@ -255,9 +257,10 @@ if or_sesh
         _orRight = box.get_right(or_bx)
         _midX = int(math.round((_orLeft + _orRight) / 2.0))
         _calculatedSize = close * (orSizePct * 0.01)
+        _rangeRatio = _calculatedSize > 0 ? orw / _calculatedSize : 0
         yPad = _calculatedSize * 0.1
         _yPos = _orTop + yPad
-        _orText  = "Δ " + str.tostring(orw, format.mintick) + " / " + str.tostring(_calculatedSize, format.mintick)
+        _orText  = "Δ " + str.tostring(orw, format.mintick) + "\n(" + str.tostring(_rangeRatio, "#.##") + ")\n= " + str.tostring(_calculatedSize, format.mintick)
         if na(or_range_lab)
             or_range_lab := label.new(x = _midX, y = _yPos, text = _orText, style = label.style_label_center, textcolor = color.white, color = invis, size = txtSize)
         else
@@ -300,8 +303,8 @@ if or_end and or_token
     // Set the right edge of the box to the current bar when session ends
     or_bx.set_right(bar_index)
     
-    h_ln := target.new(line.new(bar_index,orh,bar_index,orh, color = orColor),label.new(bar_index,orh,text = "ORH",tooltip = str.tostring(orh,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor,0), size = txtSize))
-    l_ln := target.new(line.new(bar_index,orl,bar_index,orl, color = orColor),label.new(bar_index,orl,text = "ORL",tooltip = str.tostring(orl,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor,0), size = txtSize))
+    h_ln := target.new(line.new(bar_index,orh,bar_index,orh, color = orColor),label.new(bar_index,orh,text = "ORH (" + str.tostring(orh,format.mintick) + ")",tooltip = str.tostring(orh,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor,0), size = txtSize))
+    l_ln := target.new(line.new(bar_index,orl,bar_index,orl, color = orColor),label.new(bar_index,orl,text = "ORL (" + str.tostring(orl,format.mintick) + ")",tooltip = str.tostring(orl,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor,0), size = txtSize))
     hst := orh + (orw*targetPercentOfRange)
     lst := orl - (orw*targetPercentOfRange)
     day_dir := orm > prev_orm ? 1 : orm < prev_orm ? -1 : 0
@@ -314,8 +317,9 @@ if or_end and or_token
         _orRightF = box.get_right(or_bx)
         _midXF = int(math.round((_orLeftF + _orRightF) / 2.0))
         _calculatedSize = close * (orSizePct * 0.01)
+        _rangeRatio = _calculatedSize > 0 ? orw / _calculatedSize : 0
         _yPosF = box.get_top(or_bx) + (_calculatedSize * 0.1)
-        _finalTxt = "Δ " + str.tostring(orw, format.mintick) + " / " + str.tostring(_calculatedSize, format.mintick)
+        _finalTxt = "Δ " + str.tostring(orw, format.mintick) + "\n(" + str.tostring(_rangeRatio, "#.##") + ")\n= " + str.tostring(_calculatedSize, format.mintick)
         if na(or_range_lab)
             or_range_lab := label.new(_midXF, _yPosF, _finalTxt, style = label.style_label_center, textcolor = color.white, color = invis, size = txtSize)
         else
@@ -332,10 +336,15 @@ ow_sesh := shouldShowOpportunityWindow and not na(time(timeframe.period, opportu
 ow_start = ow_sesh and not ow_sesh[1]
 ow_end   = ow_sesh[1] and not ow_sesh
 
-// VWAP Full Session Detection (from market open to close)
-vwap_full_session := shouldShowVWAP and not na(time(timeframe.period, "0930-1600", tz))
+// VWAP Full Session Detection (from market open to close) - using built-in session detection
+vwap_full_session := shouldShowVWAP and session.ismarket
 vwap_session_start := vwap_full_session and not vwap_full_session[1]
 vwap_session_end := vwap_full_session[1] and not vwap_full_session
+
+// Full Trading Session Detection (from market open to close) for midline - using built-in session detection
+full_trading_session := session.ismarket
+full_session_start := full_trading_session and not full_trading_session[1]
+full_session_end := full_trading_session[1] and not full_trading_session
 
 // VWAP Session Start (reset for full trading day)
 if vwap_session_start
@@ -360,9 +369,9 @@ if l_src < lst
 
 up_max   = get_1up((hst - orh)/(orw*targetPercentOfRange))
 down_max = get_1up((orl - lst)/(orw*targetPercentOfRange))
-
 up_cur   = math.max(0,get_1up((h_src - orh)/(orw*targetPercentOfRange)))
 down_cur = math.max(0,get_1up((orl - l_src)/(orw*targetPercentOfRange)))
+
 
 // -----------------------------
 // Signal Calcs (with clamp opt)
@@ -396,16 +405,16 @@ if not or_sesh and or_token
     if up_count < up_max and shouldShowTargets
         for i = (up_count+1) to up_max 
             up_targs.push(target.new(
-              line.new(bar_index-1,(orh+orw*targetPercentOfRange*i),bar_index,(orh+(orw*targetPercentOfRange*i)), color = green, style = linestyle(tStyle)),
-              label.new(bar_index,(orh+orw*targetPercentOfRange*i),text = str.tostring(i),tooltip = str.tostring(orh+orw*targetPercentOfRange*i,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(green,0), size = txtSize)
+              line.new(bar_index-1,(orh+orw*targetPercentOfRange*i),bar_index,(orh+(orw*targetPercentOfRange*i)), color = upSignalColor, style = linestyle(tStyle)),
+              label.new(bar_index,(orh+orw*targetPercentOfRange*i),text = str.tostring(i),tooltip = str.tostring(orh+orw*targetPercentOfRange*i,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(upSignalColor,0), size = txtSize)
               ))
             if i == up_max
                 up_count := up_max
     if down_count < down_max and shouldShowTargets
         for i = (down_count+1) to down_max
             down_targs.push(target.new(
-              line.new(bar_index-1,(orl-orw*targetPercentOfRange*i),bar_index,(orl-(orw*targetPercentOfRange*i)), color = red, style = linestyle(tStyle)),
-              label.new(bar_index,(orl-orw*targetPercentOfRange*i),text = str.tostring(i),tooltip = str.tostring(orl-orw*targetPercentOfRange*i,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(red,0), size = txtSize)
+              line.new(bar_index-1,(orl-orw*targetPercentOfRange*i),bar_index,(orl-(orw*targetPercentOfRange*i)), color = downSignalColor, style = linestyle(tStyle)),
+              label.new(bar_index,(orl-orw*targetPercentOfRange*i),text = str.tostring(i),tooltip = str.tostring(orl-orw*targetPercentOfRange*i,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(downSignalColor,0), size = txtSize)
               ))
             if i == down_max
                 down_count := down_max
@@ -414,12 +423,24 @@ if not or_sesh and or_token
 if ow_start
     if showHist == false and na(ow_bx) == false
         ow_bx.delete()
+    if showHist == false and na(ow_midline) == false
+        ow_midline.delete()
+    if showHist == false and na(ow_midline_label) == false
+        ow_midline_label.delete()
+
     // Use ORH/ORL if available; otherwise fall back to current bar H/L
     owh := na(orh) ? high : orh
     owl := na(orl) ? low  : orl
     ow_token := false
     ow_bx := box.new(bar_index, owh, bar_index, owl, bgcolor = owColor, border_width = 0)
-
+    
+    // Create opportunity window midline starting from opening range start
+    if shouldShowOpportunityWindowMidline and not na(or_start_bar)
+        ow_midpoint = (orh + orl) / 2
+        // Create line from opening range start to current bar
+        ow_midline := line.new(or_start_bar, ow_midpoint, bar_index, ow_midpoint, color = orColor, width = 1, style = line.style_solid)
+        ow_midline_label := label.new(bar_index, ow_midpoint, text = "MID (" + str.tostring(ow_midpoint, format.mintick) + ")", tooltip = str.tostring(ow_midpoint, format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor, 0), size = txtSize)
+    
 if ow_sesh
     // Glue OW height to OR height (fallback to start H/L until OR exists)
     top_now = na(orh) ? owh : orh
@@ -442,6 +463,35 @@ if ow_sesh
 
     if top_now != bot_now
         ow_token := true
+    
+    // Extend opportunity window midline during session
+    if shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
+        ow_midpoint = (orh + orl) / 2
+        line.set_x2(ow_midline, bar_index)
+        line.set_y1(ow_midline, ow_midpoint)
+        line.set_y2(ow_midline, ow_midpoint)
+        // Update MID label position and text
+        if not na(ow_midline_label)
+            label.set_x(ow_midline_label, bar_index)
+            label.set_y(ow_midline_label, ow_midpoint)
+            label.set_text(ow_midline_label, "MID (" + str.tostring(ow_midpoint, format.mintick) + ")")
+
+// Continue extending midline after opportunity window ends but before session ends
+if not ow_sesh and full_trading_session and shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
+    ow_midpoint = (orh + orl) / 2
+    line.set_x2(ow_midline, bar_index)
+    line.set_y1(ow_midline, ow_midpoint)
+    line.set_y2(ow_midline, ow_midpoint)
+    // Update MID label position and text
+    if not na(ow_midline_label)
+        label.set_x(ow_midline_label, bar_index)
+        label.set_y(ow_midline_label, ow_midpoint)
+        label.set_text(ow_midline_label, "MID (" + str.tostring(ow_midpoint, format.mintick) + ")")
+
+// On End of Full Trading Session - finalize the midline
+if full_session_end and shouldShowOpportunityWindowMidline and not na(ow_midline)
+    // Set the final end point of the midline at session close
+    line.set_x2(ow_midline, bar_index)
 
 // Extending to Current Bar   
 if targetDisplay == "Extended" and shouldShowTargets
