@@ -8,27 +8,72 @@ It provides consistent, structured logging across all components.
 import structlog
 import logging
 import sys
+import os
 from typing import Any, Dict
 
 
-def setup_logging(level: str = "INFO", use_json: bool = False) -> structlog.BoundLogger:
+def _is_cloud_environment() -> bool:
+    """
+    Detect if we're running in a cloud environment
+    
+    Returns:
+        True if running in cloud environment, False otherwise
+    """
+    environment = os.getenv('ENVIRONMENT', 'local').lower()
+    return environment in ['cloud', 'production', 'staging']
+
+
+def setup_logging(level: str = "INFO", use_json: bool = False, log_to_file: bool = True, force_json: bool = False) -> structlog.BoundLogger:
     """
     Set up structured logging for the ORB trading bot
     
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         use_json: Whether to output logs in JSON format
+        log_to_file: Whether to write logs to a file
+        force_json: Force JSON output (useful for cloud deployments)
         
     Returns:
         Configured structlog logger
     """
+    # Detect cloud environment
+    is_cloud_env = _is_cloud_environment()
+    
+    # Set up handlers
+    handlers = []
+    
+    # Console handler (always enabled)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(getattr(logging, level.upper()))
+    handlers.append(console_handler)
+    
+    # File handler (if enabled and not in cloud environment)
+    if log_to_file and not is_cloud_env:
+        import os
+        from datetime import datetime
+
+        # Create logs directory in the orb-bot directory
+        log_dir = os.path.join(os.path.dirname(__file__), "logs")
+        
+        os.makedirs(log_dir, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d")
+        log_file = os.path.join(log_dir, f"orb_trading_bot_{timestamp}.log")
+        file_handler = logging.FileHandler(log_file)
+        
+        file_handler.setLevel(getattr(logging, level.upper()))
+        handlers.append(file_handler)
+    
+    # Configure logging with handlers
     logging.basicConfig(
         format="%(message)s",
-        stream=sys.stdout,
         level=getattr(logging, level.upper()),
+        handlers=handlers,
+        force=True  # Override any existing configuration
     )
     
-    processors = [
+    # Base processors for all outputs
+    base_processors = [
         structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -38,10 +83,13 @@ def setup_logging(level: str = "INFO", use_json: bool = False) -> structlog.Boun
         structlog.processors.format_exc_info,
     ]
     
-    if use_json:
-        processors.append(structlog.processors.JSONRenderer())
+    # Configure structlog with appropriate renderer
+    # In cloud environments, always use JSON for better log aggregation
+    if use_json or force_json or is_cloud_env:
+        processors = base_processors + [structlog.processors.JSONRenderer()]
     else:
-        processors.append(structlog.dev.ConsoleRenderer(colors=True))
+        # Use ConsoleRenderer for console output (works well with both console and file)
+        processors = base_processors + [structlog.dev.ConsoleRenderer(colors=False)]
     
     structlog.configure(
         processors=processors,
@@ -64,6 +112,63 @@ def get_logger(name: str = None) -> structlog.BoundLogger:
         Configured structlog logger
     """
     return structlog.get_logger(name)
+
+
+def get_log_file_path() -> str:
+    """
+    Get the current log file path
+    
+    Returns:
+        Path to the current log file, or "stdout" if in cloud environment
+    """
+    if _is_cloud_environment():
+        return "stdout"
+    
+    from datetime import datetime
+    
+    log_dir = os.path.join(os.path.dirname(__file__), "logs")
+    timestamp = datetime.now().strftime("%Y%m%d")
+    return os.path.join(log_dir, f"orb_trading_bot_{timestamp}.log")
+
+
+def get_environment_info() -> Dict[str, Any]:
+    """
+    Get environment information for logging context
+    
+    Returns:
+        Dictionary with environment information
+    """
+    environment = os.getenv('ENVIRONMENT', 'local')
+    is_cloud = _is_cloud_environment()
+    
+    info = {
+        "environment": environment,
+        "is_cloud": is_cloud,
+        "log_output": "stdout" if is_cloud else "file",
+    }
+    
+    return info
+
+
+def initialize_trading_logger(level: str = "INFO", log_to_file: bool = True) -> tuple[structlog.BoundLogger, "TradingLogger", str, Dict[str, Any]]:
+    """
+    Initialize the complete logging system for trading applications
+    
+    Args:
+        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_to_file: Whether to write logs to a file
+        
+    Returns:
+        Tuple of (logger, trading_logger, log_file_path, env_info)
+    """
+    logger = setup_logging(level=level, log_to_file=log_to_file)
+    trading_logger = TradingLogger(logger)
+    log_file_path = get_log_file_path()
+    env_info = get_environment_info()
+    
+    logger.info("Logging initialized", log_file=log_file_path, **env_info)
+    
+    return logger, trading_logger, log_file_path, env_info
 
 
 class TradingLogger:
@@ -138,6 +243,16 @@ class TradingLogger:
             orh=round(orh, 2),
             orl=round(orl, 2),
             opportunity_window_active=opportunity_window_active
+        )
+    
+    def log_historical_data_warning(self, symbol: str, data_date: str, days_old: int) -> None:
+        """Log warning when using historical data"""
+        self.logger.warning(
+            "TRADING DISABLED - Historical data detected",
+            symbol=symbol,
+            data_date=data_date,
+            days_old=days_old,
+            reason="Historical data should not trigger live trades"
         )
     
     def log_strategy_start(self, symbol: str, opening_range_duration: int, 

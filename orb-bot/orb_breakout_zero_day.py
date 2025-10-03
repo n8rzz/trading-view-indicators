@@ -16,10 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 from alpaca_client import AlpacaClient
 from market_analyzer import MarketAnalyzer, OpportunityWindow, BreakoutSignal
-from logger_config import setup_logging, TradingLogger
-
-logger = setup_logging(level="INFO")
-trading_logger = TradingLogger(logger)
+from logger_config import initialize_trading_logger
 
 
 class OptionType(Enum):
@@ -71,6 +68,7 @@ class BreakoutSignal:
     signal_type: SignalType
     timestamp: datetime
 
+logger, trading_logger, log_file_path, env_info = initialize_trading_logger(level="INFO", log_to_file=True)
 
 class ORBBreakoutStrategy:
     """
@@ -231,12 +229,20 @@ def main():
     if not opening_range_data: 
         return
 
+    if opening_range_data.is_historical_data:
+        trading_logger.log_historical_data_warning(
+            symbol=strategy.symbol,
+            data_date=str(opening_range_data.data_date),
+            days_old=opening_range_data.days_old
+        )
+        return
+
     trading_logger.log_range_analysis(
         symbol=strategy.symbol,
-        actual_range=opening_range_data['range_size'],
-        required_range=opening_range_data['required_range_size'],
-        range_ratio=opening_range_data['range_ratio'],
-        current_price=opening_range_data['current_price']
+        actual_range=opening_range_data.range_size,
+        required_range=opening_range_data.required_range_size,
+        range_ratio=opening_range_data.range_ratio,
+        current_price=opening_range_data.current_price
     )
     
     logger.info("Calculating opportunity window...")

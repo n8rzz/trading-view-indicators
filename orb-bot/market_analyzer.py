@@ -41,6 +41,31 @@ class OpportunityWindow:
 
 
 @dataclass
+class MarketDataResult:
+    """Market data result with historical flag"""
+    data: pd.DataFrame
+    is_historical: bool
+    data_date: datetime
+    days_old: int = 0
+
+@dataclass
+class OpeningRange:
+    """Opening range calculation result"""
+    start_time: datetime
+    end_time: datetime
+    high: float
+    low: float
+    range_size: float
+    range_percent: float
+    current_price: float
+    bars_count: int
+    required_range_size: float
+    range_ratio: float
+    is_historical_data: bool
+    data_date: datetime
+    days_old: int = 0
+
+@dataclass
 class BreakoutSignal:
     """Breakout signal data structure"""
     type: str  # 'ORH_BREAKOUT' or 'ORL_BREAKOUT'
@@ -93,7 +118,7 @@ class MarketAnalyzer:
         bars_df: pd.DataFrame, 
         opening_range_duration: int = 60,
         min_range_size_percent: float = 0.2
-    ) -> Optional[Dict]:
+    ) -> Optional[OpeningRange]:
         """
         Calculate Opening Range High and Low from the provided bars data
         
@@ -115,12 +140,21 @@ class MarketAnalyzer:
             if processed_bars is None:
                 return None
             
-            today_bars = self._filter_today_market_hours(processed_bars)
+            market_data_result = self._filter_today_market_hours(processed_bars)
             
-            if today_bars.empty:
+            if market_data_result.data.empty:
                 logger.warning("No market hours data found for today")
                 return None
             
+            if market_data_result.is_historical:
+                logger.warning(
+                    "Trading disabled - using historical data",
+                    data_date=market_data_result.data_date.isoformat(),
+                    days_old=market_data_result.days_old,
+                    reason="Historical data should not trigger live trades"
+                )
+            
+            today_bars = market_data_result.data
             opening_range_data = self._extract_opening_range_period(
                 today_bars, opening_range_duration
             )
@@ -143,18 +177,21 @@ class MarketAnalyzer:
             required_range_size = range_metrics['current_price'] * (min_range_size_percent / 100)
             range_ratio = range_metrics['range_size'] / required_range_size if required_range_size > 0 else 0
             
-            result = {
-                'start_time': opening_range_start,
-                'end_time': opening_range_end,
-                'high': orh,
-                'low': orl,
-                'range_size': range_metrics['range_size'],
-                'range_percent': range_metrics['range_percent'],
-                'current_price': range_metrics['current_price'],
-                'bars_count': len(opening_range_data),
-                'required_range_size': required_range_size,
-                'range_ratio': range_ratio
-            }
+            result = OpeningRange(
+                start_time=opening_range_start,
+                end_time=opening_range_end,
+                high=orh,
+                low=orl,
+                range_size=range_metrics['range_size'],
+                range_percent=range_metrics['range_percent'],
+                current_price=range_metrics['current_price'],
+                bars_count=len(opening_range_data),
+                required_range_size=required_range_size,
+                range_ratio=range_ratio,
+                is_historical_data=market_data_result.is_historical,
+                data_date=market_data_result.data_date,
+                days_old=market_data_result.days_old
+            )
             
             logger.info(f"Opening Range calculated: ORH={orh:.2f}, ORL={orl:.2f}, Range={range_metrics['range_percent']:.2f}%")
             return result
@@ -201,7 +238,7 @@ class MarketAnalyzer:
             logger.error(f"Error preparing market data: {e}")
             return None
     
-    def _filter_today_market_hours(self, bars_df: pd.DataFrame) -> pd.DataFrame:
+    def _filter_today_market_hours(self, bars_df: pd.DataFrame) -> MarketDataResult:
         """
         Filter bars for the most recent trading day's data within market hours
         
@@ -209,7 +246,7 @@ class MarketAnalyzer:
             bars_df: Processed bars DataFrame
             
         Returns:
-            Filtered DataFrame with the most recent trading day's market hours data
+            MarketDataResult with filtered data and historical flag
         """
         # Get today's date in the configured timezone
         today = datetime.now(self.timezone)
@@ -225,16 +262,41 @@ class MarketAnalyzer:
         # If no data for today, get the most recent trading day's data
         if today_bars.empty:
             most_recent_date = bars_df['timestamp'].dt.date.max()
+            days_old = (today_date - most_recent_date).days
 
-            logger.info(f"No data for today ({today_date}), using most recent data from {most_recent_date}")
+            logger.warning(
+                "Using historical data instead of today's data",
+                today_date=today_date.isoformat(),
+                most_recent_date=most_recent_date.isoformat(),
+                days_old=days_old,
+                reason="No market data available for today"
+            )
             
             today_bars = bars_df[
                 (bars_df['timestamp'].dt.date == most_recent_date) &
                 (bars_df['timestamp'].dt.time >= self.market_open_time) &
                 (bars_df['timestamp'].dt.time <= self.market_close_time)
             ].copy()
+            
+            return MarketDataResult(
+                data=today_bars,
+                is_historical=True,
+                data_date=datetime.combine(most_recent_date, datetime.min.time()).replace(tzinfo=self.timezone),
+                days_old=days_old
+            )
         
-        return today_bars
+        logger.info(
+            "Using today's market data",
+            date=today_date.isoformat(),
+            bars_count=len(today_bars)
+        )
+        
+        return MarketDataResult(
+            data=today_bars,
+            is_historical=False,
+            data_date=datetime.combine(today_date, datetime.min.time()).replace(tzinfo=self.timezone),
+            days_old=0
+        )
     
     def _extract_opening_range_period(
         self, 
@@ -306,28 +368,28 @@ class MarketAnalyzer:
     
     def calculate_opportunity_window(
         self, 
-        opening_range_data: Dict,
+        opening_range_data: OpeningRange,
         opportunity_window_end_time: time
     ) -> Optional[OpportunityWindow]:
         """
         Calculate the opportunity window based on opening range data
         
         Args:
-            opening_range_data: Dictionary with opening range information
+            opening_range_data: OpeningRange dataclass with opening range information
             opportunity_window_end_time: End time for the opportunity window
             
         Returns:
-            Dictionary with opportunity window data or None if calculation fails
+            OpportunityWindow dataclass or None if calculation fails
         """
         try:
             if not opening_range_data:
                 return None
             
-            start_time = self._normalize_timezone(opening_range_data['end_time'])
+            start_time = self._normalize_timezone(opening_range_data.end_time)
             today = datetime.now(self.timezone).date()
             end_datetime = datetime.combine(today, opportunity_window_end_time)
             end_time = self._normalize_timezone(end_datetime)
-            midline = (opening_range_data['high'] + opening_range_data['low']) / 2
+            midline = (opening_range_data.high + opening_range_data.low) / 2
             window_duration = end_time - start_time
             
             return OpportunityWindow(
@@ -388,7 +450,7 @@ class MarketAnalyzer:
     def detect_breakout(
         self, 
         current_price: float, 
-        opening_range_data: Dict,
+        opening_range_data: OpeningRange,
         opportunity_window: OpportunityWindow
     ) -> Optional[BreakoutSignal]:
         """
