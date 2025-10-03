@@ -265,3 +265,30 @@ class TradingLogger:
             opportunity_window_end=opportunity_window_end,
             min_range_size_percent=min_range_size_percent
         )
+    
+    def log_position_closed(self, symbol: str, position_type: str, exit_reason: str, 
+                           exit_price: float, strike: float, quantity: int) -> None:
+        """Log position closure"""
+        self.logger.info(
+            "Position closed",
+            symbol=symbol,
+            position_type=position_type,
+            exit_reason=exit_reason,
+            exit_price=exit_price,
+            strike=strike,
+            quantity=quantity
+        )
+    
+    def log_exit_signal_detected(self, symbol: str, exit_type: str, current_price: float,
+                                orh: float, orl: float, midline: float, reason: str) -> None:
+        """Log exit signal detection"""
+        self.logger.info(
+            "Exit signal detected",
+            symbol=symbol,
+            exit_type=exit_type,
+            current_price=current_price,
+            orh=orh,
+            orl=orl,
+            midline=midline,
+            reason=reason
+        )

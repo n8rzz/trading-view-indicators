@@ -13,84 +13,10 @@ from datetime import datetime, time, timedelta
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
 from logger_config import get_logger
+from data_structures import OpportunityWindow, MarketDataResult, OpeningRange, BreakoutSignal, ExitSignal
+from exit_detector import ExitDetector
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class OpportunityWindow:
-    """Opportunity Window data structure"""
-    start_time: datetime
-    end_time: datetime
-    midline: float
-    duration_minutes: float
-    is_active: bool
-    
-    def is_currently_active(self, timezone: pytz.timezone) -> bool:
-        """
-        Check if current time is within this opportunity window
-        
-        Args:
-            timezone: Timezone to use for current time calculation
-            
-        Returns:
-            True if currently within opportunity window, False otherwise
-        """
-        now = datetime.now(timezone)
-        return self.start_time <= now <= self.end_time
-
-
-@dataclass
-class MarketDataResult:
-    """Market data result with historical flag"""
-    data: pd.DataFrame
-    is_historical: bool
-    data_date: datetime
-    days_old: int = 0
-
-@dataclass
-class OpeningRange:
-    """Opening range calculation result"""
-    start_time: datetime
-    end_time: datetime
-    high: float
-    low: float
-    range_size: float
-    range_percent: float
-    current_price: float
-    bars_count: int
-    required_range_size: float
-    range_ratio: float
-    is_historical_data: bool
-    data_date: datetime
-    days_old: int = 0
-
-@dataclass
-class BreakoutSignal:
-    """Breakout signal data structure"""
-    type: str  # 'ORH_BREAKOUT' or 'ORL_BREAKOUT'
-    current_price: float
-    breakout_level: float
-    direction: str  # 'UP' or 'DOWN'
-    timestamp: datetime
-    distance_from_midline: float
-    breakout_strength: float  # Percentage strength of breakout
-    
-    def display_breakout_info(self) -> str:
-        """
-        Generate a formatted string displaying breakout information
-        
-        Returns:
-            Formatted string with breakout details
-        """
-        return (
-            f"🚨 BREAKOUT DETECTED!\n"
-            f"   Type: {self.type}\n"
-            f"   Direction: {self.direction}\n"
-            f"   Breakout Level: ${self.breakout_level:.2f}\n"
-            f"   Breakout Strength: {self.breakout_strength:.2f}%\n"
-            f"   Distance from Midline: ${self.distance_from_midline:.2f}"
-        )
 
 
 class MarketAnalyzer:
@@ -112,6 +38,7 @@ class MarketAnalyzer:
         self.timezone = pytz.timezone(timezone)
         self.market_open_time = time(8, 30)  # 8:30 AM CT
         self.market_close_time = time(15, 0)  # 3:00 PM CT
+        self.exit_detector = ExitDetector(self.timezone)
     
     def calculate_opening_range(
         self, 
@@ -135,70 +62,122 @@ class MarketAnalyzer:
             return None
         
         try:
-            processed_bars = self._prepare_market_data(bars_df)
-            
-            if processed_bars is None:
+            # Step 1: Get validated market data
+            market_data_result = self._get_validated_market_data(bars_df)
+            if not market_data_result:
                 return None
             
-            market_data_result = self._filter_today_market_hours(processed_bars)
-            
-            if market_data_result.data.empty:
-                logger.warning("No market hours data found for today")
-                return None
-            
-            if market_data_result.is_historical:
-                logger.warning(
-                    "Trading disabled - using historical data",
-                    data_date=market_data_result.data_date.isoformat(),
-                    days_old=market_data_result.days_old,
-                    reason="Historical data should not trigger live trades"
-                )
-            
-            today_bars = market_data_result.data
+            # Step 2: Extract opening range period
             opening_range_data = self._extract_opening_range_period(
-                today_bars, opening_range_duration
+                market_data_result.data, opening_range_duration
             )
             
-            if opening_range_data is None:
+            if opening_range_data is None or opening_range_data.empty:
                 return None
             
-            orh = opening_range_data['high'].max()
-            orl = opening_range_data['low'].min()
+            # Step 3: Calculate ORH/ORL and validate range
+            orh, orl = self._calculate_orh_orl(opening_range_data)
             range_metrics = self._calculate_range_metrics(
                 orh, orl, opening_range_data, min_range_size_percent
             )
-
-            if range_metrics is None:
+            if not range_metrics:
                 return None
             
-            opening_range_start = today_bars['timestamp'].min()
-            opening_range_end = opening_range_start + timedelta(minutes=opening_range_duration)
-            
-            required_range_size = range_metrics['current_price'] * (min_range_size_percent / 100)
-            range_ratio = range_metrics['range_size'] / required_range_size if required_range_size > 0 else 0
-            
-            result = OpeningRange(
-                start_time=opening_range_start,
-                end_time=opening_range_end,
-                high=orh,
-                low=orl,
-                range_size=range_metrics['range_size'],
-                range_percent=range_metrics['range_percent'],
-                current_price=range_metrics['current_price'],
-                bars_count=len(opening_range_data),
-                required_range_size=required_range_size,
-                range_ratio=range_ratio,
-                is_historical_data=market_data_result.is_historical,
-                data_date=market_data_result.data_date,
-                days_old=market_data_result.days_old
+            # Step 4: Build and return OpeningRange object
+            return self._build_opening_range_object(
+                market_data_result, opening_range_data, orh, orl, 
+                range_metrics, opening_range_duration, min_range_size_percent
             )
-            
-            logger.info(f"Opening Range calculated: ORH={orh:.2f}, ORL={orl:.2f}, Range={range_metrics['range_percent']:.2f}%")
-            return result
             
         except Exception as e:
             logger.error(f"Error calculating opening range: {e}")
             return None
+    
+    def _get_validated_market_data(self, bars_df: pd.DataFrame) -> Optional[MarketDataResult]:
+        """
+        Get and validate market data for opening range calculation
+        
+        Args:
+            bars_df: Raw bars DataFrame
+            
+        Returns:
+            MarketDataResult if valid, None otherwise
+        """
+        processed_bars = self._prepare_market_data(bars_df)
+        if processed_bars is None or processed_bars.empty:
+            return None
+        
+        market_data_result = self._filter_today_market_hours(processed_bars)
+        if market_data_result.data.empty:
+            logger.warning("No market hours data found for today")
+            return None
+        
+        if market_data_result.is_historical:
+            logger.warning(
+                "Trading disabled - using historical data",
+                data_date=market_data_result.data_date.isoformat(),
+                days_old=market_data_result.days_old,
+                reason="Historical data should not trigger live trades"
+            )
+        
+        return market_data_result
+    
+    def _calculate_orh_orl(self, opening_range_data: pd.DataFrame) -> Tuple[float, float]:
+        """
+        Calculate Opening Range High and Low from opening range data
+        
+        Args:
+            opening_range_data: DataFrame with opening range bars
+            
+        Returns:
+            Tuple of (ORH, ORL)
+        """
+        orh = opening_range_data['high'].max()
+        orl = opening_range_data['low'].min()
+        return orh, orl
+    
+    def _build_opening_range_object(self, market_data_result: MarketDataResult, 
+                                   opening_range_data: pd.DataFrame, orh: float, orl: float,
+                                   range_metrics: Dict, opening_range_duration: int, 
+                                   min_range_size_percent: float) -> OpeningRange:
+        """
+        Build the final OpeningRange object
+        
+        Args:
+            market_data_result: Validated market data result
+            opening_range_data: Opening range period data
+            orh: Opening range high
+            orl: Opening range low
+            range_metrics: Calculated range metrics
+            opening_range_duration: Duration in minutes
+            min_range_size_percent: Minimum range size percentage
+            
+        Returns:
+            OpeningRange object
+        """
+        opening_range_start = market_data_result.data['timestamp'].min()
+        opening_range_end = opening_range_start + timedelta(minutes=opening_range_duration)
+        required_range_size = range_metrics['current_price'] * (min_range_size_percent / 100)
+        range_ratio = range_metrics['range_size'] / required_range_size if required_range_size > 0 else 0
+        
+        result = OpeningRange(
+            start_time=opening_range_start,
+            end_time=opening_range_end,
+            high=orh,
+            low=orl,
+            range_size=range_metrics['range_size'],
+            range_percent=range_metrics['range_percent'],
+            current_price=range_metrics['current_price'],
+            bars_count=len(opening_range_data),
+            required_range_size=required_range_size,
+            range_ratio=range_ratio,
+            is_historical_data=market_data_result.is_historical,
+            data_date=market_data_result.data_date,
+            days_old=market_data_result.days_old
+        )
+        
+        logger.info(f"Opening Range calculated: ORH={orh:.2f}, ORL={orl:.2f}, Range={range_metrics['range_percent']:.2f}%")
+        return result
     
     def _prepare_market_data(self, bars_df: pd.DataFrame) -> Optional[pd.DataFrame]:
         """
@@ -211,10 +190,8 @@ class MarketAnalyzer:
             Processed DataFrame or None if preparation fails
         """
         try:
-            # Create a copy to avoid modifying the original
             df = bars_df.copy()
             
-            # Convert timestamp to datetime if it's not already
             if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
                 df['timestamp'] = pd.to_datetime(df['timestamp'])
             
@@ -222,14 +199,13 @@ class MarketAnalyzer:
             if df['timestamp'].dt.tz is None:
                 df['timestamp'] = df['timestamp'].dt.tz_localize(self.timezone)
             
-            # Validate required columns
             required_columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
             missing_columns = [col for col in required_columns if col not in df.columns]
+            
             if missing_columns:
                 logger.error(f"Missing required columns: {missing_columns}")
                 return None
             
-            # Sort by timestamp
             df = df.sort_values('timestamp')
             
             return df
@@ -248,7 +224,6 @@ class MarketAnalyzer:
         Returns:
             MarketDataResult with filtered data and historical flag
         """
-        # Get today's date in the configured timezone
         today = datetime.now(self.timezone)
         today_date = today.date()
         
@@ -316,11 +291,8 @@ class MarketAnalyzer:
         if today_bars.empty:
             return None
         
-        # Calculate opening range end time
         opening_range_start = today_bars['timestamp'].min()
         opening_range_end = opening_range_start + timedelta(minutes=opening_range_duration)
-        
-        # Filter bars within opening range period
         opening_range_bars = today_bars[
             today_bars['timestamp'] <= opening_range_end
         ]
@@ -350,12 +322,10 @@ class MarketAnalyzer:
         Returns:
             Dictionary with range metrics or None if range is too small
         """
-        # Calculate range size and percentage
         range_size = orh - orl
         current_price = opening_range_data['close'].iloc[-1]  # Last close price in opening range
         range_percent = (range_size / current_price) * 100 if current_price > 0 else 0
         
-        # Check if range meets minimum size requirement
         if range_percent < min_range_size_percent:
             logger.warning(f"Opening range too small: {range_percent:.2f}% < {min_range_size_percent}%")
             return None
@@ -458,7 +428,7 @@ class MarketAnalyzer:
         
         Args:
             current_price: Current market price
-            opening_range_data: Dictionary with opening range information
+            opening_range_data: OpeningRange dataclass instance
             opportunity_window: OpportunityWindow dataclass instance
             
         Returns:
@@ -471,8 +441,8 @@ class MarketAnalyzer:
             if not self.is_within_opportunity_window(opportunity_window):
                 return None
             
-            orh = opening_range_data['high']
-            orl = opening_range_data['low']
+            orh = opening_range_data.high
+            orl = opening_range_data.low
             midline = opportunity_window.midline
             
             if current_price > orh:
@@ -522,4 +492,34 @@ class MarketAnalyzer:
             
         except Exception as e:
             logger.error(f"Error getting current price: {e}")
+            return None
+    
+    def detect_exit_signal(self, current_price: float, opening_range_data: OpeningRange, 
+                          opportunity_window: OpportunityWindow, has_short_call: bool = False, 
+                          has_short_put: bool = False) -> Optional[ExitSignal]:
+        """
+        Detect exit signals based on the strategy rules:
+        - Price has broken out of the OR within the Opportunity window
+        - Price has re-entered the opening range and has crossed the opportunity window midline
+        
+        Args:
+            current_price: Current market price
+            opening_range_data: Opening range data (ORH, ORL)
+            opportunity_window: Opportunity window data
+            has_short_call: Whether we have an open short call position
+            has_short_put: Whether we have an open short put position
+            
+        Returns:
+            ExitSignal if exit conditions are met, None otherwise
+        """
+        try:
+            if not opportunity_window.is_active:
+                return None
+            
+            return self.exit_detector.detect_midline_cross_exit(
+                current_price, opening_range_data, opportunity_window, has_short_call, has_short_put
+            )
+            
+        except Exception as e:
+            logger.error(f"Error detecting exit signal: {e}")
             return None

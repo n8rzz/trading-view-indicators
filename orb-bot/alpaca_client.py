@@ -115,7 +115,7 @@ class AlpacaClient:
         timeframe: TimeFrame = TimeFrame.Minute
     ) -> pd.DataFrame:
         """
-        Fetch bars for today's trading session
+        Fetch bars for today's trading session (or most recent trading day if market is closed)
         
         Args:
             symbol: Stock symbol (e.g., 'SPY')
@@ -126,11 +126,25 @@ class AlpacaClient:
         """
         # Get today's date in Eastern Time (market timezone) since US stock markets operate on ET
         eastern_tz = pytz.timezone('US/Eastern')
-        today = datetime.now(eastern_tz).date()
-        # Market open and close times in Eastern Time
-        market_open = datetime.combine(today, datetime.min.time().replace(hour=9, minute=30))
-        market_close = datetime.combine(today, datetime.min.time().replace(hour=16, minute=0))
-        # Convert to UTC for API call
+        now_et = datetime.now(eastern_tz)
+        today = now_et.date()
+        
+        # If it's before market open or after market close, get the most recent trading day
+        market_open_time = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        market_close_time = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+        target_date = today
+
+        if now_et < market_open_time:
+            # Go back to find the most recent trading day
+            target_date = today - timedelta(days=1)
+            
+            # Skip weekends
+            while target_date.weekday() >= 5:  # Saturday = 5, Sunday = 6
+                target_date -= timedelta(days=1)
+        
+        market_open = datetime.combine(target_date, datetime.min.time().replace(hour=9, minute=30))
+        market_close = datetime.combine(target_date, datetime.min.time().replace(hour=16, minute=0))
+        
         market_open_utc = eastern_tz.localize(market_open).astimezone(pytz.UTC)
         market_close_utc = eastern_tz.localize(market_close).astimezone(pytz.UTC)
         
@@ -146,17 +160,25 @@ class AlpacaClient:
             df = bars.df
             
             if df.empty:
-                logger.warning(f"No data returned for {symbol} today")
+                logger.warning(f"No data returned for {symbol} on {target_date}")
                 return pd.DataFrame()
             
             df = df.reset_index()
             df = df.sort_values('timestamp')
             
-            logger.info(f"Fetched {len(df)} bars for {symbol} today")
+            if len(df) == 0:
+                logger.info(f"Fetched {len(df)} bars for {symbol} on {target_date}")
+                return
+
+            actual_start = df['timestamp'].min()
+            actual_end = df['timestamp'].max()
+            
+            logger.info(f"Fetched {len(df)} bars for {symbol} from {actual_start} to {actual_end}")
+            
             return df
             
         except Exception as e:
-            logger.error(f"Error fetching today's bars for {symbol}: {e}")
+            logger.error(f"Error fetching bars for {symbol} on {target_date}: {e}")
             return pd.DataFrame()
     
     def is_market_open(self) -> bool:

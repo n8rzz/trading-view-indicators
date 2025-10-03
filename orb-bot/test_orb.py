@@ -14,9 +14,10 @@ import pytz
 # Add the current directory to the path so we can import our module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from orb_breakout_zero_day import ORBBreakoutStrategy, OpeningRange
+from orb_breakout_bot import ORBBreakoutStrategy
+from data_structures import OpeningRange, OpportunityWindow
 from alpaca_client import AlpacaClient
-from market_analyzer import MarketAnalyzer, OpportunityWindow
+from market_analyzer import MarketAnalyzer
 
 def create_mock_bars_data():
     """Create mock bars data for testing"""

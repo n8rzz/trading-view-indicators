@@ -18,7 +18,8 @@ import os
 # This is needed when running tests directly with python test_market_analyzer.py
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from market_analyzer import MarketAnalyzer, OpportunityWindow, BreakoutSignal
+from market_analyzer import MarketAnalyzer
+from data_structures import OpportunityWindow, BreakoutSignal
 
 
 class TestMarketAnalyzer(unittest.TestCase):
@@ -84,14 +85,14 @@ class TestMarketAnalyzer(unittest.TestCase):
         )
         
         self.assertIsNotNone(result)
-        self.assertIn('high', result)
-        self.assertIn('low', result)
-        self.assertIn('range_size', result)
-        self.assertIn('range_percent', result)
-        self.assertIn('range_ratio', result)
-        self.assertGreater(result['high'], result['low'])
-        self.assertGreater(result['range_size'], 0)
-        self.assertGreater(result['range_percent'], 0)
+        self.assertIsNotNone(result.high)
+        self.assertIsNotNone(result.low)
+        self.assertIsNotNone(result.range_size)
+        self.assertIsNotNone(result.range_percent)
+        self.assertIsNotNone(result.range_ratio)
+        self.assertGreater(result.high, result.low)
+        self.assertGreater(result.range_size, 0)
+        self.assertGreater(result.range_percent, 0)
     
     def test_calculate_opening_range_empty_data(self):
         """Test opening range calculation with empty data"""
@@ -222,7 +223,7 @@ class TestMarketAnalyzer(unittest.TestCase):
         
         # Test with price above ORH but outside window
         result = self.analyzer.detect_breakout(
-            opening_range['high'] + 1.0,
+            opening_range.high + 1.0,
             opening_range,
             opportunity_window
         )
@@ -236,13 +237,13 @@ class TestMarketAnalyzer(unittest.TestCase):
         mock_window = OpportunityWindow(
             start_time=datetime.now(self.central_tz) - timedelta(hours=1),
             end_time=datetime.now(self.central_tz) + timedelta(hours=1),
-            midline=(opening_range['high'] + opening_range['low']) / 2,
+            midline=(opening_range.high + opening_range.low) / 2,
             duration_minutes=120,
             is_active=True
         )
         
         result = self.analyzer.detect_breakout(
-            opening_range['high'] + 1.0,
+            opening_range.high + 1.0,
             opening_range,
             mock_window
         )
@@ -261,13 +262,13 @@ class TestMarketAnalyzer(unittest.TestCase):
         mock_window = OpportunityWindow(
             start_time=datetime.now(self.central_tz) - timedelta(hours=1),
             end_time=datetime.now(self.central_tz) + timedelta(hours=1),
-            midline=(opening_range['high'] + opening_range['low']) / 2,
+            midline=(opening_range.high + opening_range.low) / 2,
             duration_minutes=120,
             is_active=True
         )
         
         result = self.analyzer.detect_breakout(
-            opening_range['low'] - 1.0,
+            opening_range.low - 1.0,
             opening_range,
             mock_window
         )
@@ -286,13 +287,13 @@ class TestMarketAnalyzer(unittest.TestCase):
         mock_window = OpportunityWindow(
             start_time=datetime.now(self.central_tz) - timedelta(hours=1),
             end_time=datetime.now(self.central_tz) + timedelta(hours=1),
-            midline=(opening_range['high'] + opening_range['low']) / 2,
+            midline=(opening_range.high + opening_range.low) / 2,
             duration_minutes=120,
             is_active=True
         )
         
         # Test with price within range
-        mid_price = (opening_range['high'] + opening_range['low']) / 2
+        mid_price = (opening_range.high + opening_range.low) / 2
         result = self.analyzer.detect_breakout(
             mid_price,
             opening_range,
@@ -328,12 +329,12 @@ class TestMarketAnalyzer(unittest.TestCase):
         )
         
         self.assertIsNotNone(result)
-        self.assertIn('range_ratio', result)
-        self.assertGreater(result['range_ratio'], 0)
+        self.assertIsNotNone(result.range_ratio)
+        self.assertGreater(result.range_ratio, 0)
         
         # Range ratio should be actual range / required range
-        expected_ratio = result['range_size'] / result['required_range_size']
-        self.assertAlmostEqual(result['range_ratio'], expected_ratio, places=2)
+        expected_ratio = result.range_size / result.required_range_size
+        self.assertAlmostEqual(result.range_ratio, expected_ratio, places=2)
     
     def test_timezone_handling(self):
         """Test timezone handling in various scenarios"""
