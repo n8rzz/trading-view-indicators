@@ -7,10 +7,31 @@ This module contains shared data structures used across the ORB trading strategy
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Tuple, TYPE_CHECKING
+from enum import Enum
 import pytz
 
 if TYPE_CHECKING:
     import pandas as pd
+
+
+class BreakoutType(Enum):
+    """Types of breakout signals"""
+    ORH_BREAKOUT = "ORH_BREAKOUT"
+    ORL_BREAKOUT = "ORL_BREAKOUT"
+
+
+class BreakoutDirection(Enum):
+    """Directions of breakout signals"""
+    UP = "UP"
+    DOWN = "DOWN"
+
+
+class ExitSignalType(Enum):
+    """Types of exit signals"""
+    MIDLINE_CROSS = "MIDLINE_CROSS"
+    OPPORTUNITY_WINDOW_END = "OPPORTUNITY_WINDOW_END"
+    STOP_LOSS = "STOP_LOSS"
+    TAKE_PROFIT = "TAKE_PROFIT"
 
 
 @dataclass
@@ -62,14 +83,13 @@ class OpeningRange:
     data_date: datetime
     days_old: int = 0
 
-# FIXME: use enums for `type` and `direction`
 @dataclass
 class BreakoutSignal:
     """Breakout signal data structure"""
-    type: str  # 'ORH_BREAKOUT' or 'ORL_BREAKOUT'
+    type: BreakoutType
     current_price: float
     breakout_level: float
-    direction: str  # 'UP' or 'DOWN'
+    direction: BreakoutDirection
     timestamp: datetime
     distance_from_midline: float
     breakout_strength: float  # Percentage strength of breakout
@@ -90,11 +110,10 @@ class BreakoutSignal:
             f"   Distance from Midline: ${self.distance_from_midline:.2f}"
         )
 
-# FIXME: use enums for `type`
 @dataclass
 class ExitSignal:
     """Exit signal data structure"""
-    type: str  # SignalType enum value (e.g., 'MIDLINE_CROSS')
+    type: ExitSignalType
     current_price: float
     orh: float
     orl: float
