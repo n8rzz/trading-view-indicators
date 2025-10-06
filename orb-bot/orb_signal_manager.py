@@ -9,6 +9,7 @@ import pandas as pd
 from signal_manager import SignalManager, Signal, SignalType, SignalDirection
 from signal_context import SignalContext
 from data_structures import OpeningRange, OpportunityWindow, BreakoutType, ExitSignalType
+from option_pricer import OptionPricer
 from logger_config import initialize_trading_logger
 
 logger, trading_logger, log_file_path, env_info = initialize_trading_logger(level="INFO", log_to_file=True)
@@ -41,6 +42,10 @@ class ORBSignalManager(SignalManager):
     Detects entry signals (ORH/ORL breakouts) and exit signals
     (midline crosses, opportunity window end).
     """
+    
+    def __init__(self, strategy):
+        super().__init__(strategy)
+        self.option_pricer = OptionPricer(use_paper_trading=True)
     
     def detect_entry_signals(self, market_data: pd.DataFrame, context: ORBContext) -> List[Signal]:
         """
@@ -95,6 +100,15 @@ class ORBSignalManager(SignalManager):
             )
             signals.append(signal)
             
+            # Get option pricing data for ORH breakout (sell put)
+            self._get_option_pricing_data(
+                current_price=current_price,
+                orh=context.opening_range_data.high,
+                orl=context.opening_range_data.low,
+                signal_type=breakout.type.value,
+                option_type='put'
+            )
+            
         elif breakout.type == BreakoutType.ORL_BREAKOUT:
             signal = Signal(
                 signal_type=SignalType.ENTRY,
@@ -111,6 +125,15 @@ class ORBSignalManager(SignalManager):
                 }
             )
             signals.append(signal)
+            
+            # Get option pricing data for ORL breakout (sell call)
+            self._get_option_pricing_data(
+                current_price=current_price,
+                orh=context.opening_range_data.high,
+                orl=context.opening_range_data.low,
+                signal_type=breakout.type.value,
+                option_type='call'
+            )
         
         if signals:
             trading_logger.log_breakout_detected(
@@ -183,3 +206,57 @@ class ORBSignalManager(SignalManager):
         )
         
         return signals
+    
+    def _get_option_pricing_data(self, 
+                                current_price: float, 
+                                orh: float, 
+                                orl: float, 
+                                signal_type: str, 
+                                option_type: str):
+        """
+        Get option pricing data for the target strike
+        
+        Args:
+            current_price: Current underlying price
+            orh: Opening Range High
+            orl: Opening Range Low
+            signal_type: Type of breakout signal
+            option_type: 'call' or 'put'
+        """
+        try:
+            # Calculate target strikes
+            target_strikes = self.option_pricer.calculate_target_strikes(
+                current_price=current_price,
+                orh=orh,
+                orl=orl,
+                strike_offset_percent=self.strategy.strike_offset_percent
+            )
+            
+            # Get expiration date
+            expiration_date = self.option_pricer.get_next_expiration_date(
+                days_to_expiration=self.strategy.days_to_expiration
+            )
+            
+            # Determine target strike based on option type
+            target_strike = target_strikes['put_strike'] if option_type == 'put' else target_strikes['call_strike']
+            
+            # Fetch option pricing data
+            option_data = self.option_pricer.fetch_option_pricing(
+                symbol=self.strategy.symbol,
+                strike=target_strike,
+                option_type=option_type,
+                expiration_date=expiration_date
+            )
+            
+            if option_data:
+                # Log the option pricing data
+                self.option_pricer.log_option_pricing_data(option_data, signal_type)
+                
+                # Add option data to signal metadata (for future use)
+                logger.info(f"Option pricing data retrieved for {signal_type}: "
+                          f"{option_data.symbol} {option_data.strike} {option_data.option_type.upper()}")
+            else:
+                logger.warning(f"Failed to retrieve option pricing data for {signal_type}")
+                
+        except Exception as e:
+            logger.error(f"Error getting option pricing data for {signal_type}: {e}")
