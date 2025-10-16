@@ -9,8 +9,9 @@
 // Display Settings
 // This indicator will default to 
 // - Channel - 50 EMA High and Low 
+// - Bollinger Bands - 2.3 Standard Deviation
 // - Moving Average - 21 EMA
-// - ADX - 14 Length and 20 Baseline
+// - ATR - 20
 //
 // Colors for each plot are configurable via the indicator settings menu
 
@@ -52,9 +53,9 @@ roaming_avg_src = input(close, "Moving Average", group = "Moving Average")
 roaming_avg_type = input.string("EMA", "Moving Average Type", ["SMA", "EMA", "WMA", "RMA"], group="Moving Average")
 roaming_avg_chart_interval = input.timeframe("15", "Chart Interval", tooltip = "Select the timeframe to calculate moving average from", group = "Moving Average")
 
-// ADX
-adx_period = input(14, title="ADX Length", group="ADX")
-adx_baseline_value = input(20, title="Baseline", group="ADX")
+// Bollinger Bands
+bb_std_dev = input.float(2.0, title="Standard Deviation", group="Bollinger Bands", minval=0.1, maxval=5.0, step=0.1)
+bb_show = input.bool(true, "Show Bollinger Bands", group="Bollinger Bands")
 
 // ATR
 atr_period = input(20, title="ATR Length", group="ATR")
@@ -78,8 +79,16 @@ plotEmaLow = getMA(channel_low_ma_type, htf_low, channel_low_ma_length)
 plotMovingAverage = getMA(roaming_avg_type, roaming_avg, roaming_avg_length)
 plotAtr = ta.atr(atr_period)
 
-[_, _, plotAdx] = ta.dmi(adx_period, adx_period)
-isAdxAboveBaseline = plotAdx >= adx_baseline_value
+// Calculate Bollinger Bands using the moving average as center line
+bb_std = ta.stdev(roaming_avg, roaming_avg_length)
+bb_upper = plotMovingAverage + (bb_std * bb_std_dev)
+bb_lower = plotMovingAverage - (bb_std * bb_std_dev)
+
+// Calculate metrics for table display
+bb_width = bb_upper - bb_lower
+channel_width = plotEmaHigh - plotEmaLow
+separation = plotMovingAverage > plotEmaHigh ? plotMovingAverage - plotEmaHigh : plotEmaLow - plotMovingAverage
+
 
 //
 // Render utils
@@ -144,17 +153,6 @@ getRoamingAverageLabelText() =>
         else
             "Neutral"
 
-getAdxLabelColor() =>
-    var confirmationDistanceAsPercentage = 0.1
-    var adx_baseline_valuePlusConfirmationDistance = adx_baseline_value * confirmationDistanceAsPercentage
-
-    if plotAdx <= adx_baseline_value - adx_baseline_valuePlusConfirmationDistance
-        color.red
-    else if plotAdx > adx_baseline_value + adx_baseline_valuePlusConfirmationDistance
-        color.green
-    else
-        color.black
-
 getAtrLabelColor() =>
     var lowAtrValue = 5
     var midAtrValue = 10
@@ -171,22 +169,27 @@ getAtrLabelColor() =>
 //
 // Render
 // 
-maPlot = plot(plotMovingAverage, color=color.new(#5b9cf6, 10), style=plot.style_line, linewidth=2, title="Moving Average")
+maPlot = plot(plotMovingAverage, color=color.yellow, style=plot.style_line, linewidth=1, title="Moving Average")
 ema1plot = plot(plotEmaHigh, color=color.new(#666666, 25), style=plot.style_line, linewidth=1, title='Channel High', editable = false)
 ema2plot = plot(plotEmaLow, color=color.new(#666666, 25), style=plot.style_line, linewidth=1, title='Channel Low', editable = false)
+
+// Bollinger Bands plots
+bb_upper_plot = plot(bb_show ? bb_upper : na, color=color.new(#666666, 10), style=plot.style_line, linewidth=1, title="BB Upper")
+bb_lower_plot = plot(bb_show ? bb_lower : na, color=color.new(#666666, 10), style=plot.style_line, linewidth=1, title="BB Lower")
+
 labelTable = table.new(position = position.bottom_left, columns = 4, rows = 2, bgcolor = #333333, border_width = 1)
 
 fill(ema1plot, ema2plot, color=getChannelFillColor())
 
 if barstate.islast and should_show_strategy_labels
-    table.cell(table_id = labelTable, column = 0, row = 0, text = "Channel", text_color = color.white, text_halign = text.align_center, text_size = size.small)
-    table.cell(table_id = labelTable, column = 0, row = 1, text = getChannelLabelText(), bgcolor=getChannelLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 0, row = 0, text = "ATR", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 0, row = 1, text = str.tostring(math.round(plotAtr, 0)), bgcolor=getAtrLabelColor(), text_color = getAtrLabelColor() == color.green ? color.black : color.white, text_halign = text.align_center, text_size = size.small)
     
-    table.cell(table_id = labelTable, column = 1, row = 0, text = "AVG", text_color = color.white, text_halign = text.align_center, text_size = size.small)
-    table.cell(table_id = labelTable, column = 1, row = 1, text = getRoamingAverageLabelText(), bgcolor=getRoamingAverageLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 1, row = 0, text = "BB Width", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 1, row = 1, text = str.tostring(math.round(bb_width, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
     
-    table.cell(table_id = labelTable, column = 2, row = 0, text = "ADX", text_color = color.white, text_halign = text.align_center, text_size = size.small)
-    table.cell(table_id = labelTable, column = 2, row = 1, text = str.tostring(math.round(plotAdx, 0)), bgcolor=getAdxLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 2, row = 0, text = "Ch Width", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 2, row = 1, text = str.tostring(math.round(channel_width, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
     
-    table.cell(table_id = labelTable, column = 3, row = 0, text = "ATR", text_color = color.white, text_halign = text.align_center, text_size = size.small)
-    table.cell(table_id = labelTable, column = 3, row = 1, text = str.tostring(math.round(plotAtr, 0)), bgcolor=getAtrLabelColor(), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 3, row = 0, text = "Sep", text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 3, row = 1, text = str.tostring(math.round(separation, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
