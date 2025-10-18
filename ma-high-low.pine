@@ -31,6 +31,28 @@ getMA(maType, source, period) =>
     else if maType == "RMA"
         ta.rma(source, period)
 
+getTablePosition(positionString) =>
+    if positionString == "Top Left"
+        position.top_left
+    else if positionString == "Top Center"
+        position.top_center
+    else if positionString == "Top Right"
+        position.top_right
+    else if positionString == "Middle Left"
+        position.middle_left
+    else if positionString == "Middle Center"
+        position.middle_center
+    else if positionString == "Middle Right"
+        position.middle_right
+    else if positionString == "Bottom Left"
+        position.bottom_left
+    else if positionString == "Bottom Center"
+        position.bottom_center
+    else if positionString == "Bottom Right"
+        position.bottom_right
+    else
+        position.bottom_left
+
 
 //
 // Inputs
@@ -59,9 +81,11 @@ bb_show = input.bool(true, "Show Bollinger Bands", group="Bollinger Bands")
 
 // ATR
 atr_period = input(20, title="ATR Length", group="ATR")
+atr_chart_interval = input.timeframe("", "Chart Interval", tooltip = "Select the timeframe to calculate ATR from (empty = current chart)", group = "ATR")
 
 // Labels
-should_show_strategy_labels = input.bool(true, "Strategy Table", tooltip = "Shows Strategy table, in bottom left corner, colorized based on strategy rules", group= "Labels")
+should_show_strategy_labels = input.bool(true, "Strategy Table", tooltip = "Shows Strategy table with metrics", group= "Labels")
+table_position = input.string("Bottom Left", "Table Position", options = ["Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right", "Bottom Left", "Bottom Center", "Bottom Right"], group= "Labels")
 
 
 //
@@ -77,7 +101,7 @@ roaming_avg = request.security(syminfo.tickerid, roaming_avg_chart_interval, clo
 plotEmaHigh = getMA(channel_high_ma_type, htf_high, channel_high_ma_length)
 plotEmaLow = getMA(channel_low_ma_type, htf_low, channel_low_ma_length)
 plotMovingAverage = getMA(roaming_avg_type, roaming_avg, roaming_avg_length)
-plotAtr = ta.atr(atr_period)
+plotAtr = request.security(syminfo.tickerid, atr_chart_interval, ta.atr(atr_period))
 
 // Calculate Bollinger Bands using the moving average as center line
 bb_std = ta.stdev(roaming_avg, roaming_avg_length)
@@ -88,6 +112,11 @@ bb_lower = plotMovingAverage - (bb_std * bb_std_dev)
 bb_width = bb_upper - bb_lower
 channel_width = plotEmaHigh - plotEmaLow
 separation = plotMovingAverage > plotEmaHigh ? plotMovingAverage - plotEmaHigh : plotEmaLow - plotMovingAverage
+
+// Calculate ATR multiples
+bb_width_atr_multiple = plotAtr > 0 ? bb_width / plotAtr : 0
+channel_width_atr_multiple = plotAtr > 0 ? channel_width / plotAtr : 0
+separation_atr_multiple = plotAtr > 0 ? separation / plotAtr : 0
 
 
 //
@@ -177,19 +206,23 @@ ema2plot = plot(plotEmaLow, color=color.new(#666666, 25), style=plot.style_line,
 bb_upper_plot = plot(bb_show ? bb_upper : na, color=color.new(#666666, 10), style=plot.style_line, linewidth=1, title="BB Upper")
 bb_lower_plot = plot(bb_show ? bb_lower : na, color=color.new(#666666, 10), style=plot.style_line, linewidth=1, title="BB Lower")
 
-labelTable = table.new(position = position.bottom_left, columns = 4, rows = 2, bgcolor = #333333, border_width = 1)
+labelTable = table.new(position = getTablePosition(table_position), columns = 4, rows = 3, bgcolor = #333333, border_width = 1)
 
 fill(ema1plot, ema2plot, color=getChannelFillColor())
 
 if barstate.islast and should_show_strategy_labels
     table.cell(table_id = labelTable, column = 0, row = 0, text = "ATR", text_color = color.white, text_halign = text.align_center, text_size = size.small)
     table.cell(table_id = labelTable, column = 0, row = 1, text = str.tostring(math.round(plotAtr, 0)), bgcolor=getAtrLabelColor(), text_color = getAtrLabelColor() == color.green ? color.black : color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 0, row = 2, text = "", text_color = color.white, text_halign = text.align_center, text_size = size.small)
     
     table.cell(table_id = labelTable, column = 1, row = 0, text = "BB Width", text_color = color.white, text_halign = text.align_center, text_size = size.small)
     table.cell(table_id = labelTable, column = 1, row = 1, text = str.tostring(math.round(bb_width, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 1, row = 2, text = str.tostring(math.round(bb_width_atr_multiple, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
     
     table.cell(table_id = labelTable, column = 2, row = 0, text = "Ch Width", text_color = color.white, text_halign = text.align_center, text_size = size.small)
     table.cell(table_id = labelTable, column = 2, row = 1, text = str.tostring(math.round(channel_width, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 2, row = 2, text = str.tostring(math.round(channel_width_atr_multiple, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
     
     table.cell(table_id = labelTable, column = 3, row = 0, text = "Sep", text_color = color.white, text_halign = text.align_center, text_size = size.small)
     table.cell(table_id = labelTable, column = 3, row = 1, text = str.tostring(math.round(separation, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
+    table.cell(table_id = labelTable, column = 3, row = 2, text = str.tostring(math.round(separation_atr_multiple, 2)), text_color = color.white, text_halign = text.align_center, text_size = size.small)
