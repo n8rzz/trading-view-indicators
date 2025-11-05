@@ -1,0 +1,107 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © teamtomkins23
+//
+// Description
+//
+// Plots the opening range (high/low).
+//
+// Work here represents modifications to:
+// Up/Dn Volume + Delta by @FractalTrade_ - https://www.tradingview.com/script/qZa9lJwS-Up-Down-Volume-Delta/
+// Up/Down Trend Marker by @Informanerd - https://www.tradingview.com/script/CqKW6Xui-Up-Down-Trend-Marker/
+
+// @version=5
+indicator("Up/Down Volume + Delta", format=format.volume)
+
+lowerTimeframeTooltip = "The indicator scans lower timeframe data to approximate Up/Down volume. By default, the timeframe is chosen automatically. These inputs override this with a custom timeframe.
+ \n\nHigher timeframes provide more historical data, but the data will be less precise."
+useCustomTimeframeInput = input.bool(false, "Use custom timeframe", tooltip = lowerTimeframeTooltip)
+lowerTimeframeInput = input.timeframe("1", "Timeframe")
+bullc = input(color.new(color.green, 0), title = "Up Color")
+bullBg = input(color.new(color.gray, 60), title = "Up Color Background")
+bearc = input(#d501fa, title = "Down Color")
+bearBg = input(color.new(color.gray, 60), title = "Down Color Background")
+cumulativeDeltaWindow = input.int(10, "Cumulative Delta Window (bars)", minval = 1, tooltip = "Rolling sum of delta over the last N bars.")
+cumulativeDeltaLine = input(color.new(color.white, 25), title="Cumulative Delta Window Plot")
+shouldShowCumulativeDelta = input.bool(true, "Show Cumulative Delta Line")
+
+upAndDownVolume() =>
+    posVol = 0.0
+    negVol = 0.0
+    
+    switch
+        close >  open     => posVol += volume
+        close <  open     => negVol -= volume
+        close >= close[1] => posVol += volume
+        close <  close[1] => negVol -= volume
+
+    [posVol, negVol]
+
+lowerTimeframe = switch
+    useCustomTimeframeInput => lowerTimeframeInput
+    timeframe.isintraday    => "1"
+    timeframe.isdaily       => "5"
+    => "60"
+
+[upVolumeArray, downVolumeArray] = request.security_lower_tf(syminfo.tickerid, lowerTimeframe, upAndDownVolume())
+upVolume = array.sum(upVolumeArray)
+downVolume = array.sum(downVolumeArray)
+delta = upVolume + downVolume
+cumulativeDelta = ta.cum(delta) - nz(ta.cum(delta)[cumulativeDeltaWindow])
+// cumDeltaColor = cumulativeDelta >= 0 ? bullc : bearc
+zeroLine = 0.0
+
+plot(upVolume, "Up Volume", style = plot.style_columns, color=bullBg)
+plot(downVolume, "Down Volume", style = plot.style_columns, color=bearBg)
+plot(delta, "delta", color = delta > 0 ? bullc : bearc, style = plot.style_columns)
+plot(shouldShowCumulativeDelta ? cumulativeDelta : na, title="Cum Delta (rolling)", color=cumulativeDeltaLine, linewidth=1)
+plot(shouldShowCumulativeDelta ? 0.0 : na, title="Zero", color=color.new(color.gray, 70))
+
+//
+// vol up/down trend marker
+//
+src = input.source(close, title = "Price Source")
+strength = input.int(4, title = "Trend Strength (1-10)", minval = 1, maxval = 10)
+showUpTrend = input(true, title="Show UpTrends")
+showDownTrend = input(true, title="Show DownTrends")
+
+ema1 = ta.ema(src, 2 * strength)
+ema2 = ta.ema(src, 5 * strength)
+ema3 = ta.ema(src, 10 * strength)
+
+[diP, diM, _] = ta.dmi(14, 1)
+
+var float renkoStep = na
+var float renkoLevel = na
+renkoStep := na(renkoStep) ? ta.atr(14) : renkoStep[1]
+renkoLevel := na(renkoLevel) ? math.floor(src / renkoStep) * renkoStep : renkoLevel[1]
+renkoTrend = ""
+if renkoStep < src - renkoLevel
+    renkoLevel := renkoLevel + renkoStep
+    renkoTrend := "u"
+if src - renkoLevel < -renkoStep
+    renkoLevel := renkoLevel - renkoStep
+    renkoTrend := "d"
+
+up1 = ema1 > ema2 and ema2 > ema3
+down1 = ema1 < ema2 and ema2 < ema3
+up2 = diP - diM > 5 + strength
+down2 = diM - diP > 5 + strength
+up3 = renkoTrend == "u"
+down3 = renkoTrend == "d"
+
+var lastTrend = ""
+
+up = (lastTrend == "" or lastTrend == "down") and up1 and up2 and up3
+down = (lastTrend == "" or lastTrend == "up") and down1 and down2 and down3
+
+if up
+    lastTrend := "up"
+if down
+    lastTrend := "down"
+
+upTrendColor = input.color(color.rgb(0, 255, 0, 0), title="Custom UpTrend Color")   
+downTrendColor = input.color(color.rgb(255, 2, 0, 0), title="Custom DownTrend Color")
+
+plotshape(showUpTrend ? up : na, style = shape.cross, location = location.top, color = upTrendColor, size = size.tiny)
+plotshape(showDownTrend ? down : na, style = shape.cross, location = location.top, color = downTrendColor, size = size.tiny)
+

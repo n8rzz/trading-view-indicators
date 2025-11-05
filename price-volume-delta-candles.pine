@@ -1,0 +1,79 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+//
+// Description
+//
+// Colors a bar when price diverges from volume delta. Bars will be colored under the following scenarios:
+//
+// - price closes up and volume delta is down
+// - price closes down and volume delta is up
+//
+// © teamtomkins23
+
+//@version=5
+indicator("Price/Volume Delta Candles", "Price/Volume Delta Candles", overlay=true)
+
+lowerTimeframeTooltip = "The indicator scans lower timeframe data to approximate Up/Down volume. By default, the timeframe is chosen automatically. These inputs override this with a custom timeframe. \n\nHigher timeframes provide more historical data, but the data will be less precise."
+should_use_custom_timeframe = input.bool(false, title="Use custom timeframe", tooltip=lowerTimeframeTooltip)
+lower_timeframe_value = input.timeframe("1", title="Timeframe")
+should_use_candle_color = input.bool(false, title="Use Candle Color for Delta bars")
+should_use_shape = input.bool(true, title="Use Shapes above/below Delta bars")
+
+// Alert threshold settings
+deltaThresholdTooltip = "Minimum delta strength (as % of bar volume) required to trigger divergence. Higher values = fewer but stronger signals. Set to 0 to show all divergences."
+deltaThreshold = input.float(20.0, title="Delta Threshold (%)", minval=0.0, maxval=100.0, step=5.0, tooltip=deltaThresholdTooltip)
+
+//
+// math utils
+//
+upAndDownVolume() =>
+    posVol = 0.0
+    negVol = 0.0
+    
+    switch
+        close >  open     => posVol += volume
+        close <  open     => negVol -= volume
+        close >= close[1] => posVol += volume
+        close <  close[1] => negVol -= volume
+
+    [posVol, negVol]
+
+lowerTimeframe = switch
+    should_use_custom_timeframe => lower_timeframe_value
+    timeframe.isintraday    => "1"
+    timeframe.isdaily       => "5"
+    => "60"
+
+[upVolumeArray, downVolumeArray] = request.security_lower_tf(syminfo.tickerid, lowerTimeframe, upAndDownVolume())
+
+upVolume = array.sum(upVolumeArray)
+downVolume = array.sum(downVolumeArray)
+delta = upVolume + downVolume
+
+//
+// utils
+//
+// Calculate delta as percentage of total volume
+deltaPercent = volume > 0 ? (math.abs(delta) / volume) * 100.0 : 0.0
+meetsThreshold = deltaPercent >= deltaThreshold
+
+isBearishDivergence() => delta > 0 and close < close[1] and meetsThreshold
+isBullishDivergence() => delta < 0 and close > close[1] and meetsThreshold
+    
+//
+// render
+//
+barcolor(should_use_candle_color and isBullishDivergence() ? color.purple : na)
+barcolor(should_use_candle_color and isBearishDivergence() ? color.white : na)
+
+plotshape(isBullishDivergence() ? close : na, title="Bullish Divergence", location=location.abovebar, style=shape.arrowdown, color=color.new(#cc3bb9, 0), size=size.small)
+plotshape(isBearishDivergence() ? close : na, title="Bearish Divergence", location=location.belowbar, style=shape.arrowup, color=color.new(#2f6ece, 0), size=size.small)
+
+
+
+//
+// cleanup
+//
+var cumVol = 0.
+cumVol += nz(volume)
+if barstate.islast and cumVol == 0
+    runtime.error("The data vendor doesn't provide volume data for this symbol.")

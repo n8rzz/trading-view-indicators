@@ -64,7 +64,7 @@ channel_high_ma_length = input.int(50, "", inline = "Channel Top", group = "Chan
 channel_low_src = input(low, "Bottom", inline = "Channel Bottom", group = "Channel")
 channel_low_ma_type = input.string("EMA", "", options = ["SMA", "EMA", "WMA", "RMA"], inline = "Channel Bottom", group = "Channel")
 channel_low_ma_length = input.int(50, "", inline = "Channel Bottom", group = "Channel", minval = 1)
-channel_chart_interval = input.timeframe("60", "Chart Interval", tooltip = "Select the timeframe to calculate moving averages from", group = "Channel")
+channel_chart_interval = input.timeframe("", "Chart Interval", tooltip = "Select the timeframe to calculate moving averages from", group = "Channel")
 channel_bullish_color = input.color(color.new(#2962ff, 89), "Bullish", group = "Channel")
 channel_neutral_color = input.color(color.new(#b2b5be, 89), "Neutral", group = "Channel")
 channel_bearish_color = input.color(color.new(#512da9, 87), "Bearish", group = "Channel")
@@ -73,15 +73,18 @@ channel_bearish_color = input.color(color.new(#512da9, 87), "Bearish", group = "
 roaming_avg_length = input(21, title="Length", group = "Moving Average")
 roaming_avg_src = input(close, "Moving Average", group = "Moving Average")
 roaming_avg_type = input.string("EMA", "Moving Average Type", ["SMA", "EMA", "WMA", "RMA"], group="Moving Average")
-roaming_avg_chart_interval = input.timeframe("15", "Chart Interval", tooltip = "Select the timeframe to calculate moving average from", group = "Moving Average")
+roaming_avg_chart_interval = input.timeframe("", "Chart Interval", tooltip = "Select the timeframe to calculate moving average from", group = "Moving Average")
+
+// ATR
+atr_period = input(20, title="ATR Length", group="ATR")
+atr_chart_interval = input.timeframe("", "Chart Interval", tooltip = "Select the timeframe to calculate ATR", group = "ATR")
+atr_show_bands = input.bool(true, "Plot ATR Bands", group="ATR")
+atr_band_ma_type = input.string("EMA", "Band Smoothing Type", ["SMA", "EMA", "WMA", "RMA"], group="ATR")
+atr_band_smoothing_length = input.int(5, "Smoothing Length", group="ATR", minval=1)
 
 // Bollinger Bands
 bb_std_dev = input.float(2.0, title="Standard Deviation", group="Bollinger Bands", minval=0.1, maxval=5.0, step=0.1)
 bb_show = input.bool(true, "Show Bollinger Bands", group="Bollinger Bands")
-
-// ATR
-atr_period = input(20, title="ATR Length", group="ATR")
-atr_chart_interval = input.timeframe("", "Chart Interval", tooltip = "Select the timeframe to calculate ATR from (empty = current chart)", group = "ATR")
 
 // Labels
 should_show_strategy_labels = input.bool(true, "Strategy Table", tooltip = "Shows Strategy table with metrics", group= "Labels")
@@ -107,6 +110,12 @@ plotAtr = request.security(syminfo.tickerid, atr_chart_interval, ta.atr(atr_peri
 bb_std = ta.stdev(roaming_avg, roaming_avg_length)
 bb_upper = plotMovingAverage + (bb_std * bb_std_dev)
 bb_lower = plotMovingAverage - (bb_std * bb_std_dev)
+
+// Calculate ATR Bands
+atr_smoothed = getMA(atr_band_ma_type, plotAtr, atr_band_smoothing_length)
+atr_center = getMA(atr_band_ma_type, close, atr_band_smoothing_length)
+atr_upper = atr_center + atr_smoothed
+atr_lower = atr_center - atr_smoothed
 
 // Calculate metrics for table display
 bb_width = bb_upper - bb_lower
@@ -195,6 +204,7 @@ getAtrLabelColor() =>
     else
         color.black
 
+
 //
 // Render
 // 
@@ -205,6 +215,10 @@ ema2plot = plot(plotEmaLow, color=color.new(#666666, 25), style=plot.style_line,
 // Bollinger Bands plots
 bb_upper_plot = plot(bb_show ? bb_upper : na, color=color.new(#666666, 10), style=plot.style_line, linewidth=1, title="BB Upper")
 bb_lower_plot = plot(bb_show ? bb_lower : na, color=color.new(#666666, 10), style=plot.style_line, linewidth=1, title="BB Lower")
+
+// ATR Bands plots
+atr_upper_plot = plot(atr_show_bands ? atr_upper : na, color=color.new(color.purple, 15), style=plot.style_line, linewidth=1, title="ATR Upper")
+atr_lower_plot = plot(atr_show_bands ? atr_lower : na, color=color.new(color.purple, 15), style=plot.style_line, linewidth=1, title="ATR Lower")
 
 labelTable = table.new(position = getTablePosition(table_position), columns = 4, rows = 3, bgcolor = #333333, border_width = 1)
 
