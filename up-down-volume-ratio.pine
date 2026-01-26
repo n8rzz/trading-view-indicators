@@ -1,0 +1,41 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © teamtomkins23
+//
+// Description
+//
+// Plots the opening range (high/low).
+//
+// Work here represents modifications to Up/Dn Volume Ratio by @CarusoInsights
+// - https://www.tradingview.com/script/SANpU4xy-Up-Down-Vol-Ratio/
+
+//@version=5
+indicator(title='Up/Dn Volume Ratio', shorttitle='Up/Dn Vol Ratio', precision=1)
+
+// Input for moving average length
+int maLength = input.int(defval=50, minval=1, title='Up/Dn Vol Length')
+color defaultLineColor = input.color(color.gray)
+color flatColor = input.color(color.orange)
+color highUDColor = input.color(color.green)
+color highlightUdTransparency = input.color(defval=color.new(#00FF00, 90), title='Highlight Transparency')
+color highlightFlatTransparency = input.color(defval=color.new(color.white, 97), title='Highlight Transparency')
+
+upVol = close > close[1] ? volume : 0
+dnVol = close < close[1] ? volume : 0
+sumUp = ta.sma(upVol, maLength)
+sumDn = ta.sma(dnVol, maLength)
+upDnVolRatio = sumUp / sumDn
+flat = 1
+highUD = 2
+
+
+// Plot the Up/Dn Vol Ratio line
+lineColor = upDnVolRatio >= highUD ? highUDColor : upDnVolRatio >= flat and upDnVolRatio < highUD ? flatColor : defaultLineColor
+
+plot(upDnVolRatio, title='Up/Dn Vol Ratio', color=lineColor, style=plot.style_line, linewidth=1)
+
+// Plot the background highlight
+bgcolor(upDnVolRatio >= highUD ? highlightUdTransparency : upDnVolRatio < highUD and upDnVolRatio >= flat ? highlightFlatTransparency : na)
+
+// Plot lines for flat and highUD
+plot(flat, title='1.0', color=color.new(color.white, 85), style=plot.style_line, linewidth=1)
+plot(highUD, title='2.0', color=color.new(color.white, 50), style=plot.style_line, linewidth=1)

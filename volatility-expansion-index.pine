@@ -1,0 +1,42 @@
+// VEI (Volatility Environment Index)
+//
+// See @link https://www.reddit.com/r/algotrading/comments/1phv4zz/the_signal_i_use_to_detect_hidden_instability_in/
+//
+// VEI = ATR(10) / ATR(50), measuring short-term volatility vs. the market’s baseline.
+//
+// Regimes:
+// - VEI < 1.0 → Stable/normal conditions; trend & pullback setups behave cleanly
+// - VEI > 1.2 → Volatility expansion; noisy trends, fakeouts, more stop-outs
+// - VEI < 1.0 → Controlled contraction; highly structured, trend/pullback-friendly
+//
+// Use VEI as:
+// - A market stability / regime filter and risk-management tool
+// - To decide when your strategy’s conditions are favorable (position sizing, skipping trades)
+//
+// VEI is NOT:
+// - A buy/sell signal, directional tool, or predictor — it gatekeeps *whether* you should trade, not *where* to enter.
+
+
+//@version=5
+
+indicator("VEI - Volatility Expansion Index)", overlay=false)
+
+// Settings
+shortATR = input.int(10, "ATR Short Length")
+longATR = input.int(50, "ATR Long Length")
+threshold = input.float(1.2, "Expansion Threshold")
+
+// ATR calculations
+atr_short = ta.atr(shortATR)
+atr_long = ta.atr(longATR)
+
+// VEI calculation
+vei = atr_short / atr_long
+
+// Plot VEI
+plot(vei, color=color.new(color.gray, 0), linewidth=1, title="VEI")
+// Plot threshold line
+hline(threshold, "VEI Threshold", color=color.orange, linewidth=1)
+// Simple color change
+bgcolor(vei > threshold ? color.new(color.red, 85) : na)
+
