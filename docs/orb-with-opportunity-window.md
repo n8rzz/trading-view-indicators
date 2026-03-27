@@ -176,15 +176,23 @@ Target N: ORL - (OR Width × (N × 0.5))
 
 **Components:**
 
-- **VWAP Line** (Blue): True average price weighted by volume
-- **Upper Band** (White): VWAP + (2 × Standard Deviation)
-- **Lower Band** (White): VWAP - (2 × Standard Deviation)
+- **VWAP Line**: True average price weighted by volume
+- **Upper/Lower Band Set 1**: VWAP +/- (StdDev Multiplier 1)
+- **Upper/Lower Band Set 2**: VWAP +/- (StdDev Multiplier 2)
 
 **Calculation:**
 
-- Resets at market open each session
-- Cumulative throughout the day
+- Supports two anchor modes:
+  - **Session Open**: resets at market open each session
+  - **Recurring Time**: resets daily at a configured anchor time/session (with timezone)
+- Cumulative between resets
 - Uses typical price: (High + Low + Close) / 3
+
+**Input Notes:**
+
+- **Anchor Mode default** is **Recurring Time** (can be switched to Session Open)
+- **Recurring Anchor Time** uses a short session window (example: `1700-1701`) as the daily reset trigger
+- A single top-level **Timezone** input controls all time-based logic (Opening Range, Opportunity Window, and recurring VWAP anchor timing)
 
 **Purpose:**
 
@@ -279,11 +287,13 @@ Small ranges = False breakouts = Whipsaw trades
 
 ```text
 Above OR Box:
-Δ 12.50          ← Actual range width
-(1.25)           ← Ratio (1.25x target)
-= 10.00          ← Target minimum
+12.50 Δ          ← Actual range width
+1.25 ◇           ← Ratio (1.25x target)
+10.00 =          ← Target minimum
 
-Green background = Good (1.25 > 1.0)
+Label text color:
+- Green when ratio >= 1.0
+- Red when ratio < 1.0
 ```
 
 ### Target Generation System
@@ -380,8 +390,8 @@ Can be customized for different trading styles:
 
 **Mean Reversion Trades:**
 
-- Price at VWAP +2 SD band = Potential resistance (fade longs)
-- Price at VWAP -2 SD band = Potential support (fade shorts)
+- Price at upper VWAP bands (Set 1/2) = Potential resistance (fade longs)
+- Price at lower VWAP bands (Set 1/2) = Potential support (fade shorts)
 - Combined with OR levels for confluence
 
 **Intraday Bias:**
@@ -1441,25 +1451,21 @@ The Opening Range Breakout with Opportunity Window indicator transforms the clas
 ### Key Takeaways
 
 1. **Range Quality is Everything**
-
    - Green ranges (ratio > 1.0) are tradeable
    - Red ranges (ratio < 1.0) should be skipped
    - This single filter can double your win rate
 
 2. **Time of Day Matters**
-
    - 9:30-12:00 PM is the sweet spot
    - First hour post-OR is highest probability
    - Avoid lunch hour and late afternoon
 
 3. **Targets Provide Structure**
-
    - Automated target generation removes guesswork
    - Scale out using 3-part position
    - Let winners run past Target 3
 
 4. **VWAP Adds Confirmation**
-
    - Breakouts with VWAP alignment are stronger
    - Use VWAP as dynamic support/resistance
    - Trail stops using VWAP after breakout
@@ -1488,7 +1494,7 @@ The Opening Range Breakout with Opportunity Window indicator transforms the clas
 
 ### Practical Implementation
 
-**Week 1-2: Paper Trade**
+#### Week 1-2: Paper Trade
 
 - Watch indicator form each morning
 - Note range quality (green/red)
@@ -1496,7 +1502,7 @@ The Opening Range Breakout with Opportunity Window indicator transforms the clas
 - Track target achievement
 - Don't risk real money yet
 
-**Week 3-4: Single Contract**
+#### Week 3-4: Single Contract
 
 - Trade 1 MES contract only
 - Green ranges only
@@ -1504,14 +1510,14 @@ The Opening Range Breakout with Opportunity Window indicator transforms the clas
 - Track every trade in journal
 - Goal: Consistency, not profit
 
-**Month 2-3: Standard Position**
+#### Month 2-3: Standard Position
 
 - Scale to 2-3 contracts if profitable
 - Implement scaling out at targets
 - Add VWAP filter
 - Refine parameters for your style
 
-**Month 4+: Full Implementation**
+#### Month 4+: Full Implementation
 
 - Trade full system
 - Consider MNQ if MES mastered

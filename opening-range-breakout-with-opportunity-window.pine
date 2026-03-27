@@ -13,15 +13,18 @@ indicator("Opening Range with Breakouts, Targets & Opportunity Window", shorttit
 showHist = input.bool(false, title = "Show Historical Data", group = "Historical Display", tooltip = "Displays All Data from Previous Sessions")
 
 
+// Timezone
+timezoneInputGroup = "Timezone"
+tz = input.string("UTC-5", title = "Timezone", group = timezoneInputGroup, tooltip = "Sets the timezone used by all time-based settings in this indicator, including Opening Range, Opportunity Window, and recurring VWAP anchor timing.", options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6","UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"])
+
 // Opening Range
 orSizeTargetInputGroup = "Opening Range Size Target"
 orTimePeriod = input.timeframe("60", title = "Length", group = "Opening Range", tooltip = "Sets the Length of Time used for determining Opening Range") 
 customRangeSession = input.session("0830-0930", title = "Opening Range Timeframe", group = orSizeTargetInputGroup)
-tz = input.string("UTC-5", title = "Timezone", group = orSizeTargetInputGroup, options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6","UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"])
 
 
 // Opening Range Size (% of current price)
-orSizePct = input.float(0.2, minval = 0.0, step = 0.01, title = "Opening Range Size (%)", group = orSizeTargetInputGroup)
+orSizePct = input.float(0.2, minval = 0.0, step = 0.01, title = "Opening Range Size (%)", group = orSizeTargetInputGroup, tooltip = "Defines the target opening-range size as a percent of current price. The indicator compares actual OR width to this target to compute the range ratio, drive range-quality color/readiness, and update the OR size label metrics.")
 sizeGoodColor = input.color(color.new(#00ff00, 90), title = "Good Range Size", group = orSizeTargetInputGroup, tooltip = "Color when opening range size meets or exceeds target")
 sizeBadColor = input.color(color.new(#ff0000, 90), title = "Poor Range Size", group = orSizeTargetInputGroup, tooltip = "Color when opening range size is below target")
 sizeNeutralColor = input.color(color.new(color.yellow, 85), title = "Neutral", group = orSizeTargetInputGroup, tooltip = "OR Session has not completed yet")
@@ -40,8 +43,7 @@ shouldShowTargets = input.bool(true, title = "Show Targets", group = "Targets")
 // Opportunity Window
 opportunityWindowInputGroup = "Opportunity Window"
 opportunityWindowSession = input.session("0930-1200", title = "Start + End", group = opportunityWindowInputGroup, inline = "OWTime")
-orColor = input.color(color.new(color.white, 40), title = "Opportunity Window Line + Label Color", group = opportunityWindowInputGroup)
-owColor = input.color(color.new(#7b1fa2, 80), title = "Opportunity Window Fill Color", group = opportunityWindowInputGroup)
+owColor = input.color(color.new(#7b1fa2, 85), title = "Opportunity Window Fill Color", group = opportunityWindowInputGroup)
 shouldShowOpportunityWindowMidline = input.bool(true, "Show Midline", group = opportunityWindowInputGroup)
 shouldShowOpportunityWindow = input.bool(true, title = "Show Opportunity Window", group = opportunityWindowInputGroup)
 
@@ -49,7 +51,7 @@ shouldShowOpportunityWindow = input.bool(true, title = "Show Opportunity Window"
 // Breakout Signals
 shouldShowBreakoutSignals = input.bool(true, title = "Show Breakout Signals", group = "Breakout Signals")
 signalBias = input.string("No Bias", title = "Signal Bias", options = ["No Bias","Daily Bias"], group = "Breakout Signals", tooltip = "OR Fill Color is directional based on if the current Day/Session ORM is Above or Below the Previous ORM.\nExamples\nNo Bias: Signals Occur Regardless of OR Color\nDaily Bias: Signals do not fire until Target 1 when Breakout is in opposite direction of OR Color.") == "No Bias" ? false : true
-signalSize = str.lower(input.string("Normal", title = "Signal Size", options = ["Tiny","Small","Normal","Large","Huge"], group = "Breakout Signals"))
+signalSize = str.lower(input.string("Large", title = "Signal Size", options = ["Tiny","Small","Normal","Large","Huge"], group = "Breakout Signals"))
 upSignalColor = input.color(color.new(#00ff00, 10), title = "Up Color", group = "Breakout Signals")
 downSignalColor = input.color(color.new(#ff0000, 10), title = "Down Color", group = "Breakout Signals")
 shouldClampSingalsToOpportunityWindow = input.bool(true, title = "Clamp signals to Opportunity Window", group = "Breakout Signals")
@@ -57,10 +59,15 @@ shouldClampSingalsToOpportunityWindow = input.bool(true, title = "Clamp signals 
 
 // VWAP
 shouldShowVWAP = input.bool(true, title = "Show VWAP", group = "VWAP")
+vwapAnchorMode = input.string("Recurring Time", title = "Anchor Mode", options = ["Recurring Time", "Session Open"], group = "VWAP", tooltip = "Selects how VWAP resets. Recurring Time: resets once per day at the configured Recurring Anchor Time using the indicator Timezone. Session Open: resets at each regular market session open (session.ismarket).")
+vwapAnchorSession = input.session("1700-1701", title = "Recurring Anchor Time", group = "VWAP")
 vwapStdDevMultiplier = input.float(2.0, minval = 0.1, step = 0.1, title = "Standard Deviation Multiplier", group = "VWAP", tooltip = "Multiplier for VWAP standard deviation bands")
-vwapColor = input.color(color.new(color.blue, 0), title = "VWAP Color", group = "VWAP")
-vwapUpperBandColor = input.color(color.new(color.white, 70), title = "Upper Band Color", group = "VWAP")
-vwapLowerBandColor = input.color(color.new(color.white, 70), title = "Lower Band Color", group = "VWAP")
+vwapStdDevMultiplier2 = input.float(3.0, minval = 0.1, step = 0.1, title = "Second Standard Deviation Multiplier", group = "VWAP")
+vwapColor = input.color(color.new(color.yellow, 0), title = "VWAP Color", group = "VWAP")
+vwapUpperBandColor = input.color(color.new(color.white, 90), title = "Upper Band Color", group = "VWAP")
+vwapLowerBandColor = input.color(color.new(color.white, 90), title = "Lower Band Color", group = "VWAP")
+vwapUpperBandColor2 = input.color(color.new(color.white, 70), title = "Second Upper Band Color", group = "VWAP")
+vwapLowerBandColor2 = input.color(color.new(color.white, 70), title = "Second Lower Band Color", group = "VWAP")
 
 
 // Alerts
@@ -68,6 +75,7 @@ isAlertAboveEnabled = input.bool(true,  title = "Enable Alert: Cross Above ORH",
 isAlertBelowEnabled = input.bool(true,  title = "Enable Alert: Cross Below ORL", group = "Alerts")
 
 invis = color.rgb(0,0,0,100)
+orLineColor = color.new(color.purple, 50)
 
 //---------------------------------------------------------------------------------------------------------------------}
 // Error
@@ -155,6 +163,8 @@ var float vwap_variance_sum = na
 var float vwap_std_dev = na
 var float vwap_upper_band = na
 var float vwap_lower_band = na
+var float vwap_upper_band_2 = na
+var float vwap_lower_band_2 = na
 
 // VWAP session tracking
 var bool vwap_full_session = false
@@ -219,7 +229,7 @@ if or_start
     down_check := true
 
     // Reset VWAP calculations for new session (will be overridden by full session start)
-    if shouldShowVWAP
+    if shouldShowVWAP and vwapAnchorMode == "Session Open"
         vwap_cumulative_volume := volume
         vwap_cumulative_typical_price_volume := (high + low + close) / 3 * volume
         vwap_variance_sum := 0
@@ -258,18 +268,42 @@ if or_sesh
         _midX = int(math.round((_orLeft + _orRight) / 2.0))
         _calculatedSize = close * (orSizePct * 0.01)
         _rangeRatio = _calculatedSize > 0 ? orw / _calculatedSize : 0
-        yPad = _calculatedSize * 0.1
+        _orTextColor = _rangeRatio >= 1 ? color.new(#00ff00, 0) : color.red
+        yPad = math.max(_calculatedSize * 0.52, syminfo.mintick * 28)
         _yPos = _orTop + yPad
-        _orText  = "Δ " + str.tostring(orw, format.mintick) + "\n(" + str.tostring(_rangeRatio, "#.##") + ")\n= " + str.tostring(_calculatedSize, format.mintick)
+        _orText  = str.tostring(orw, format.mintick) + " Δ" + "\n" + str.tostring(_rangeRatio, "#.##") + " ◇" + "\n" + str.tostring(_calculatedSize, format.mintick) + " ="
+        
         if na(or_range_lab)
-            or_range_lab := label.new(x = _midX, y = _yPos, text = _orText, style = label.style_label_center, textcolor = color.white, color = invis, size = txtSize)
+            or_range_lab := label.new(x = _midX, y = _yPos, text = _orText, style = label.style_label_center, textcolor = _orTextColor, color = invis, size = txtSize)
         else
             label.set_x(or_range_lab, _midX)
             label.set_y(or_range_lab, _yPos)
             label.set_text(or_range_lab, _orText)
+            label.set_textcolor(or_range_lab, _orTextColor)
     else if not na(or_range_lab)
         label.delete(or_range_lab)
         or_range_lab := na
+
+// VWAP anchor/session detection (must be evaluated before VWAP math)
+vwap_is_recurring_anchor = vwapAnchorMode == "Recurring Time"
+vwap_anchor_parts = str.split(vwapAnchorSession, "-")
+vwap_anchor_start_str = array.size(vwap_anchor_parts) > 0 ? array.get(vwap_anchor_parts, 0) : "0000"
+vwap_anchor_hour = int(nz(str.tonumber(str.substring(vwap_anchor_start_str, 0, 2)), 0))
+vwap_anchor_minute = int(nz(str.tonumber(str.substring(vwap_anchor_start_str, 2, 4)), 0))
+vwap_anchor_secs = vwap_anchor_hour * 3600 + vwap_anchor_minute * 60
+vwap_now_secs = hour(time, tz) * 3600 + minute(time, tz) * 60 + second(time, tz)
+vwap_prev_secs = nz(hour(time[1], tz) * 3600 + minute(time[1], tz) * 60 + second(time[1], tz), vwap_now_secs)
+vwap_day_changed = year(time, tz) != year(time[1], tz) or month(time, tz) != month(time[1], tz) or dayofmonth(time, tz) != dayofmonth(time[1], tz)
+vwap_session_start_recurring = shouldShowVWAP and vwap_is_recurring_anchor and ((vwap_now_secs >= vwap_anchor_secs and vwap_prev_secs < vwap_anchor_secs) or (vwap_day_changed and vwap_now_secs >= vwap_anchor_secs))
+vwap_full_session := shouldShowVWAP and (vwap_is_recurring_anchor ? true : session.ismarket)
+vwap_session_start := vwap_is_recurring_anchor ? vwap_session_start_recurring : (vwap_full_session and not vwap_full_session[1])
+vwap_session_end := vwap_is_recurring_anchor ? false : (vwap_full_session[1] and not vwap_full_session)
+
+// VWAP Session Start (reset for full trading day)
+if vwap_session_start
+    vwap_cumulative_volume := volume
+    vwap_cumulative_typical_price_volume := (high + low + close) / 3 * volume
+    vwap_variance_sum := 0
 
 // VWAP Calculations (during full trading session)
 if shouldShowVWAP and vwap_full_session
@@ -292,19 +326,23 @@ if shouldShowVWAP and vwap_full_session
             // Calculate bands
             vwap_upper_band := vwap_value + (vwap_std_dev * vwapStdDevMultiplier)
             vwap_lower_band := vwap_value - (vwap_std_dev * vwapStdDevMultiplier)
+            vwap_upper_band_2 := vwap_value + (vwap_std_dev * vwapStdDevMultiplier2)
+            vwap_lower_band_2 := vwap_value - (vwap_std_dev * vwapStdDevMultiplier2)
 
 // Reset VWAP when full session ends to prevent connection to next session
 if vwap_session_end and shouldShowVWAP
     vwap_value := na
     vwap_upper_band := na
     vwap_lower_band := na
+    vwap_upper_band_2 := na
+    vwap_lower_band_2 := na
         
 if or_end and or_token
     // Set the right edge of the box to the current bar when session ends
     or_bx.set_right(bar_index)
     
-    h_ln := target.new(line.new(bar_index,orh,bar_index,orh, color = orColor),label.new(bar_index,orh,text = "ORH (" + str.tostring(orh,format.mintick) + ")",tooltip = str.tostring(orh,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor,0), size = txtSize))
-    l_ln := target.new(line.new(bar_index,orl,bar_index,orl, color = orColor),label.new(bar_index,orl,text = "ORL (" + str.tostring(orl,format.mintick) + ")",tooltip = str.tostring(orl,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor,0), size = txtSize))
+    h_ln := target.new(line.new(bar_index,orh,bar_index,orh, color = orLineColor),label.new(bar_index,orh,text = "ORH (" + str.tostring(orh,format.mintick) + ")",tooltip = str.tostring(orh,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orLineColor,0), size = txtSize))
+    l_ln := target.new(line.new(bar_index,orl,bar_index,orl, color = orLineColor),label.new(bar_index,orl,text = "ORL (" + str.tostring(orl,format.mintick) + ")",tooltip = str.tostring(orl,format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orLineColor,0), size = txtSize))
     hst := orh + (orw*targetPercentOfRange)
     lst := orl - (orw*targetPercentOfRange)
     day_dir := orm > prev_orm ? 1 : orm < prev_orm ? -1 : 0
@@ -318,14 +356,16 @@ if or_end and or_token
         _midXF = int(math.round((_orLeftF + _orRightF) / 2.0))
         _calculatedSize = close * (orSizePct * 0.01)
         _rangeRatio = _calculatedSize > 0 ? orw / _calculatedSize : 0
-        _yPosF = box.get_top(or_bx) + (_calculatedSize * 0.1)
-        _finalTxt = "Δ " + str.tostring(orw, format.mintick) + "\n(" + str.tostring(_rangeRatio, "#.##") + ")\n= " + str.tostring(_calculatedSize, format.mintick)
+        _orTextColor = _rangeRatio >= 1 ? color.lime : color.red
+        _yPosF = box.get_top(or_bx) + math.max(_calculatedSize * 0.52, syminfo.mintick * 28)
+        _finalTxt = str.tostring(orw, format.mintick) + " Δ" + "\n" + str.tostring(_rangeRatio, "#.##") + " ◇" + "\n" + str.tostring(_calculatedSize, format.mintick) + " ="
         if na(or_range_lab)
-            or_range_lab := label.new(_midXF, _yPosF, _finalTxt, style = label.style_label_center, textcolor = color.white, color = invis, size = txtSize)
+            or_range_lab := label.new(_midXF, _yPosF, _finalTxt, style = label.style_label_center, textcolor = _orTextColor, color = invis, size = txtSize)
         else
             label.set_x(or_range_lab, _midXF)
             label.set_y(or_range_lab, _yPosF)
             label.set_text(or_range_lab, _finalTxt)
+            label.set_textcolor(or_range_lab, _orTextColor)
     else if not na(or_range_lab)
         label.delete(or_range_lab)
         or_range_lab := na
@@ -336,21 +376,10 @@ ow_sesh := shouldShowOpportunityWindow and not na(time(timeframe.period, opportu
 ow_start = ow_sesh and not ow_sesh[1]
 ow_end   = ow_sesh[1] and not ow_sesh
 
-// VWAP Full Session Detection (from market open to close) - using built-in session detection
-vwap_full_session := shouldShowVWAP and session.ismarket
-vwap_session_start := vwap_full_session and not vwap_full_session[1]
-vwap_session_end := vwap_full_session[1] and not vwap_full_session
-
 // Full Trading Session Detection (from market open to close) for midline - using built-in session detection
 full_trading_session := session.ismarket
 full_session_start := full_trading_session and not full_trading_session[1]
 full_session_end := full_trading_session[1] and not full_trading_session
-
-// VWAP Session Start (reset for full trading day)
-if vwap_session_start
-    vwap_cumulative_volume := volume
-    vwap_cumulative_typical_price_volume := (high + low + close) / 3 * volume
-    vwap_variance_sum := 0
 
 // Running outside of OR Session
 if not or_sesh and or_token
@@ -438,8 +467,8 @@ if ow_start
     if shouldShowOpportunityWindowMidline and not na(or_start_bar)
         ow_midpoint = (orh + orl) / 2
         // Create line from opening range start to current bar
-        ow_midline := line.new(or_start_bar, ow_midpoint, bar_index, ow_midpoint, color = orColor, width = 1, style = line.style_solid)
-        ow_midline_label := label.new(bar_index, ow_midpoint, text = "MID (" + str.tostring(ow_midpoint, format.mintick) + ")", tooltip = str.tostring(ow_midpoint, format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orColor, 0), size = txtSize)
+        ow_midline := line.new(or_start_bar, ow_midpoint, bar_index, ow_midpoint, color = orLineColor, width = 1, style = line.style_solid)
+        ow_midline_label := label.new(bar_index, ow_midpoint, text = "MID (" + str.tostring(ow_midpoint, format.mintick) + ")", tooltip = str.tostring(ow_midpoint, format.mintick), style = label.style_label_left, color = invis, textcolor = color.new(orLineColor, 0), size = txtSize)
     
 if ow_sesh
     // Glue OW height to OR height (fallback to start H/L until OR exists)
@@ -534,7 +563,7 @@ if down_signal and shouldShowBreakoutSignals and inWin
 plot(shouldShowVWAP and vwap_full_session ? vwap_value : na, 
      title="VWAP", 
      color=vwapColor, 
-     linewidth=2, 
+     linewidth=1, 
      style=plot.style_linebr,
      display=shouldShowVWAP ? display.all : display.none)
 
@@ -548,6 +577,20 @@ plot(shouldShowVWAP and vwap_full_session ? vwap_upper_band : na,
 plot(shouldShowVWAP and vwap_full_session ? vwap_lower_band : na, 
      title="VWAP Lower Band", 
      color=vwapLowerBandColor, 
+     linewidth=1, 
+     style=plot.style_linebr,
+     display=shouldShowVWAP ? display.all : display.none)
+
+plot(shouldShowVWAP and vwap_full_session ? vwap_upper_band_2 : na, 
+     title="VWAP Upper Band 2", 
+     color=vwapUpperBandColor2, 
+     linewidth=1, 
+     style=plot.style_linebr,
+     display=shouldShowVWAP ? display.all : display.none)
+
+plot(shouldShowVWAP and vwap_full_session ? vwap_lower_band_2 : na, 
+     title="VWAP Lower Band 2", 
+     color=vwapLowerBandColor2, 
      linewidth=1, 
      style=plot.style_linebr,
      display=shouldShowVWAP ? display.all : display.none)
