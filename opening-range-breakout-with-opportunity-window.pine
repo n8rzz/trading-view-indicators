@@ -70,6 +70,15 @@ vwapUpperBandColor2 = input.color(color.new(color.white, 70), title = "Second Up
 vwapLowerBandColor2 = input.color(color.new(color.white, 70), title = "Second Lower Band Color", group = "VWAP")
 
 
+// Moving Average
+maInputGroup = "Moving Average"
+shouldShowMA = input.bool(false, title = "Show Moving Average", group = maInputGroup)
+maSource = input.source(close, title = "Source", group = maInputGroup, tooltip = "Price series the moving average is computed on (e.g. Close, HL2, HLC3, OHLC4). VWMA still weights by volume.")
+maType = input.string("EMA", title = "Average Type", options = ["SMA", "EMA", "RMA", "WMA", "VWMA"], group = maInputGroup, tooltip = "RMA is Wilder smoothing. SMMA is smoothed MA (used in tools like Williams Alligator). ALMA uses offset 0.85 and sigma 6. LinReg is linear regression of the selected source.")
+maLength = input.int(20, title = "Length", minval = 1, group = maInputGroup)
+maColor = input.color(color.new(#00BCD4, 0), title = "Color", group = maInputGroup)
+
+
 // Alerts
 isAlertAboveEnabled = input.bool(true,  title = "Enable Alert: Cross Above ORH", group = "Alerts")
 isAlertBelowEnabled = input.bool(true,  title = "Enable Alert: Cross Below ORL", group = "Alerts")
@@ -95,8 +104,23 @@ linestyle(_input) =>
      _input == ". . ."?line.style_dotted:
      na
 
+// Map selected MA type to ta.* (ALMA uses fixed offset/sigma; LinReg on `source` at `offset=0`).
+// SMMA is handled separately with `var` state because it needs a recursive seed.
+ma_calc(_src, _len, _t) =>
+    _t == "SMA" ? ta.sma(_src, _len) :
+     _t == "EMA" ? ta.ema(_src, _len) :
+     _t == "RMA" ? ta.rma(_src, _len) :
+     _t == "WMA" ? ta.wma(_src, _len) :
+     _t == "VWMA" ? ta.vwma(_src, _len) :
+     _t == "HMA" ? ta.hma(_src, _len) :
+     _t == "ALMA" ? ta.alma(_src, _len, 0.85, 6) :
+     _t == "LinReg" ? ta.linreg(_src, _len, 0) :
+     ta.sma(_src, _len)
+
+// Smallest integer >= _val (ceil) without ta.ceil, used for target index math.
 get_1up(_val) => (_val - math.floor(_val)) > 0 ? int(math.floor(_val) + 1) : int(_val)
 
+// OR box background: neutral until OR completes; then green if width ≥ `close * orSizePct%`, else red.
 getSizeBg(_orh, _orl, _complete) =>
     _orWidth = na(_orh) or na(_orl) ? na : math.abs(_orh - _orl)
     _orSize  = close * (orSizePct * 0.01)
@@ -179,6 +203,8 @@ full_session_end = false
 // ---------------------------------------------------------------------------------------------------------------------}
 // Calculations
 // ---------------------------------------------------------------------------------------------------------------------{
+// Core OR series: `or_sesh` true when bar time falls in `customRangeSession` (see `tz`).
+// `h_src`/`l_src` drive target extension tracking and optionally use highs/lows instead of close.
 orm = math.avg(orh,orl)
 orw = math.abs(orh-orl)    
 h_src = targetCrossSource == "Close" ? close : high
@@ -261,7 +287,8 @@ if or_sesh
     if orh != orl
         or_token := true
 
-    // --- OR Height label (live during OR session)
+    // OR size label (Δ / ratio / target size): compares actual OR width to `close * orSizePct%`.
+    // Ratio ≥ 1 → lime text; otherwise red. Placed above the OR box with a fixed tick-aware offset.
     if shouldShowOrbSizeLabel
         _orLeft = box.get_left(or_bx)
         _orRight = box.get_right(or_bx)
@@ -284,7 +311,10 @@ if or_sesh
         label.delete(or_range_lab)
         or_range_lab := na
 
-// VWAP anchor/session detection (must be evaluated before VWAP math)
+// --- VWAP anchor (runs before cumulative VWAP math) ---
+// Recurring: parses HHMM from `vwapAnchorSession` start token; reset when bar time in `tz` crosses that clock time
+// (incl. day-change edge). Session-open: follows `session.ismarket` and resets on session start.
+// `vwap_full_session`: recurring mode keeps VWAP active all bars; session mode only during RTH.
 vwap_is_recurring_anchor = vwapAnchorMode == "Recurring Time"
 vwap_anchor_parts = str.split(vwapAnchorSession, "-")
 vwap_anchor_start_str = array.size(vwap_anchor_parts) > 0 ? array.get(vwap_anchor_parts, 0) : "0000"
@@ -349,7 +379,7 @@ if or_end and or_token
     
     or_bx.set_bgcolor(getSizeBg(orh, orl, true))
 
-    // --- Freeze the height label at final midpoint above OR box
+    // Same OR size metrics as live OR, but anchored to final box top after OR freeze.
     if shouldShowOrbSizeLabel
         _orLeftF = box.get_left(or_bx)
         _orRightF = box.get_right(or_bx)
@@ -390,21 +420,25 @@ if not or_sesh and or_token
     m_ln.set_x2(bar_index)
     or_bx.set_bgcolor(getSizeBg(orh, orl, true))
 
-// Target Calculations
+// --- Extension targets (numbered lines above/below ORH/ORL) ---
+// `hst`/`lst` track the extreme excursion of `h_src`/`l_src` since OR freeze; each step is `orw * targetPercentOfRange`.
+// `up_max`/`down_max` = how many levels "exist" up to that excursion; floored to at least 2 so target 1 & 2 always draw.
+// `up_cur`/`down_cur` index how far price has progressed for adaptive display and bias signal variants.
 if h_src > hst
     hst := h_src
 if l_src < lst
     lst := l_src
 
-up_max   = get_1up((hst - orh)/(orw*targetPercentOfRange))
-down_max = get_1up((orl - lst)/(orw*targetPercentOfRange))
+up_max   = math.max(2, get_1up((hst - orh)/(orw*targetPercentOfRange)))
+down_max = math.max(2, get_1up((orl - lst)/(orw*targetPercentOfRange)))
 up_cur   = math.max(0,get_1up((h_src - orh)/(orw*targetPercentOfRange)))
 down_cur = math.max(0,get_1up((orl - l_src)/(orw*targetPercentOfRange)))
 
 
-// -----------------------------
-// Signal Calcs (with clamp opt)
-// -----------------------------
+// --- Breakout signals ---
+// `inWin`: optional gate so arrows only print inside the Opportunity Window session.
+// Daily bias (`day_dir` from OR mid vs prior OR mid): can require first target break (`xup2`/`xdown2`) instead of raw ORH/ORL
+// so shorts on bullish gap days (etc.) wait for one projection step beyond the range.
 inWin = (not shouldClampSingalsToOpportunityWindow) or (shouldClampSingalsToOpportunityWindow and ow_sesh)
 
 if  (close > orm and down_check == false)
@@ -429,7 +463,7 @@ if (signalBias ? ((day_dir != -1 and xup) or (day_dir == -1 and xup2)) : ta.cros
 // Display
 // ---------------------------------------------------------------------------------------------------------------------{
 
-// Targets
+// Lazily push `target` objects (line + label) as `up_max`/`down_max` grow; `up_count`/`down_count` track what's created.
 if not or_sesh and or_token
     if up_count < up_max and shouldShowTargets
         for i = (up_count+1) to up_max 
@@ -477,7 +511,7 @@ if ow_sesh
     ow_bx.set_top(top_now)
     ow_bx.set_bottom(bot_now)
 
-    // Extend the box's right edge to today's OW end time (in bars ahead of 'now')
+    // Right edge of OW box: parse session end HHMM from settings, estimate bars until that exchange time, extend visually.
     _owParts = str.split(opportunityWindowSession, "-")
     _endStr  = array.size(_owParts) >= 2 ? array.get(_owParts, 1) : "0000"
     _endH    = str.tonumber(str.substring(_endStr, 0, 2))
@@ -493,7 +527,7 @@ if ow_sesh
     if top_now != bot_now
         ow_token := true
     
-    // Extend opportunity window midline during session
+    // Midline at (ORH+ORL)/2 from `or_start_bar`; Y updates if OR still forming; X2 follows price through day.
     if shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
         ow_midpoint = (orh + orl) / 2
         line.set_x2(ow_midline, bar_index)
@@ -505,7 +539,7 @@ if ow_sesh
             label.set_y(ow_midline_label, ow_midpoint)
             label.set_text(ow_midline_label, "MID (" + str.tostring(ow_midpoint, format.mintick) + ")")
 
-// Continue extending midline after opportunity window ends but before session ends
+// Midline keeps extending after OW session ends while `session.ismarket` (full session) remains true.
 if not ow_sesh and full_trading_session and shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
     ow_midpoint = (orh + orl) / 2
     line.set_x2(ow_midline, bar_index)
@@ -531,15 +565,23 @@ if targetDisplay == "Extended" and shouldShowTargets
         targ.ln.set_x2(bar_index)
         targ.lab.set_x(bar_index) 
 
+// Adaptive: only extend target lines near current `up_cur`/`down_cur` "window"; always keep first two extension levels visible.
 if targetDisplay == "Adaptive" and shouldShowTargets
+    _stepT = orw * targetPercentOfRange
     for targ in up_targs
-        if targ.ln.get_y1() <= (orh+(orw*targetPercentOfRange*(up_cur))) and targ.ln.get_y1() >= (orh+(orw*targetPercentOfRange*(up_cur-2)))
-            targ.ln.set_x2(bar_index+1)
-            targ.lab.set_x(bar_index+1)
+        _yu = targ.ln.get_y1()
+        _inUpBand = _yu <= (orh + (orw * targetPercentOfRange * up_cur)) and _yu >= (orh + (orw * targetPercentOfRange * (up_cur - 2)))
+        _isUp12 = _stepT > 0 and (math.abs(_yu - (orh + _stepT * 1)) <= syminfo.mintick or math.abs(_yu - (orh + _stepT * 2)) <= syminfo.mintick)
+        if _inUpBand or _isUp12
+            targ.ln.set_x2(bar_index + 1)
+            targ.lab.set_x(bar_index + 1)
     for targ in down_targs
-        if targ.ln.get_y1() <= (orl-(orw*targetPercentOfRange*(down_cur-2))) and targ.ln.get_y1() >= (orl-(orw*targetPercentOfRange*(down_cur)))
-            targ.ln.set_x2(bar_index+1)
-            targ.lab.set_x(bar_index+1)
+        _yd = targ.ln.get_y1()
+        _inDnBand = _yd <= (orl - (orw * targetPercentOfRange * (down_cur - 2))) and _yd >= (orl - (orw * targetPercentOfRange * down_cur))
+        _isDn12 = _stepT > 0 and (math.abs(_yd - (orl - _stepT * 1)) <= syminfo.mintick or math.abs(_yd - (orl - _stepT * 2)) <= syminfo.mintick)
+        if _inDnBand or _isDn12
+            targ.ln.set_x2(bar_index + 1)
+            targ.lab.set_x(bar_index + 1)
 
 
 // Signals (draw only if allowed by clamp/window)
@@ -558,6 +600,15 @@ if down_signal and shouldShowBreakoutSignals and inWin
       color = invis, 
       textcolor = downSignalColor, 
       size = signalSize))
+
+// SMMA: seed with SMA on first bar after selection, then recursive smooth; state cleared when type ≠ SMMA.
+var float ma_smma_mem = na
+if shouldShowMA and maType == "SMMA"
+    ma_smma_mem := na(ma_smma_mem[1]) ? ta.sma(maSource, maLength) : (ma_smma_mem[1] * (maLength - 1) + maSource) / maLength
+else
+    ma_smma_mem := na
+
+ma_value = shouldShowMA ? (maType == "SMMA" ? ma_smma_mem : ma_calc(maSource, maLength, maType)) : na
 
 // VWAP Plots
 plot(shouldShowVWAP and vwap_full_session ? vwap_value : na, 
@@ -594,6 +645,13 @@ plot(shouldShowVWAP and vwap_full_session ? vwap_lower_band_2 : na,
      linewidth=1, 
      style=plot.style_linebr,
      display=shouldShowVWAP ? display.all : display.none)
+
+plot(ma_value,
+     title = "Moving Average",
+     color = maColor,
+     linewidth = 2,
+     style = plot.style_line,
+     display = shouldShowMA ? display.all : display.none)
 
 // ───────────────────────────────
 // User alert settings
