@@ -1,0 +1,503 @@
+// © n8rzz - Nate Geslin
+// Opening Range Breakout — multi-session (per-session timezones), anchored VWAP, filters, stats.
+// CC BY-NC-SA 4.0
+//
+// Stats table: "Max R▲" / "Max R▼" are favorable vs adverse R-multiples after the **first**
+// confirmed breakout direction of that session day (`rArm`); second direction still gets a label but not R stats.
+
+// @version=6
+indicator("Opening Range Breakout (Exchange Ranges)", shorttitle = "ORB ExR", overlay = true, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
+
+// ---------------------------------------------------------------------------------------------------------------------
+// input() `options` must be literal string arrays — not `array.from()` (compile-time constant required).
+
+grpCore = "Core"
+calcTf = input.timeframe("5", "Calculation timeframe", group = grpCore, tooltip = "OR, VWAP, filters, and breakouts use this timeframe.")
+breakoutMode = input.string("close", "Breakout mode", options = ["close", "wick"], group = grpCore)
+limitOneBreakoutTotal = input.bool(false, "One breakout total per session day", group = grpCore)
+showHistoricalSessions = input.bool(true, "Show historical ORH/ORL", group = grpCore, tooltip = "When off, opening range levels are hidden (VWAP/filters still use calc timeframe).")
+
+grpDur = "OR duration"
+orPreset = input.string("15", "Preset (minutes)", options = ["5", "9", "12", "15", "20", "30", "Custom"], group = grpDur)
+orCustom = input.int(15, "Custom minutes", minval = 1, maxval = 480, group = grpDur)
+orDurResolved() => orPreset == "Custom" ? orCustom : int(str.tonumber(orPreset))
+
+sessEnabled_0 = input.bool(true, "On", group = "Session 1", inline = "s0")
+sessName_0 = input.string("London Open", "Name", group = "Session 1", inline = "s0n")
+sessStart_0 = input.string("08:00", "Start HH:MM", group = "Session 1")
+sessTz_0 = input.string("UTC+0", "TZ", options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6", "UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"], group = "Session 1", inline = "s0z")
+sessColor_0 = input.color(color.new(#2962FF, 82), "Color", group = "Session 1", inline = "s0c")
+sessShowBox_0 = input.bool(true, "OR box", group = "Session 1", inline = "s0b")
+sessShowLbl_0 = input.bool(true, "Labels", group = "Session 1", inline = "s0l")
+
+sessEnabled_1 = input.bool(true, "On", group = "Session 2", inline = "s1")
+sessName_1 = input.string("New York", "Name", group = "Session 2", inline = "s1n")
+sessStart_1 = input.string("09:30", "Start HH:MM", group = "Session 2")
+sessTz_1 = input.string("UTC-5", "TZ", options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6", "UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"], group = "Session 2", inline = "s1z")
+sessColor_1 = input.color(color.new(#FF6D00, 82), "Color", group = "Session 2", inline = "s1c")
+sessShowBox_1 = input.bool(true, "OR box", group = "Session 2", inline = "s1b")
+sessShowLbl_1 = input.bool(true, "Labels", group = "Session 2", inline = "s1l")
+
+sessEnabled_2 = input.bool(true, "On", group = "Session 3", inline = "s2")
+sessName_2 = input.string("Asia", "Name", group = "Session 3", inline = "s2n")
+sessStart_2 = input.string("21:00", "Start HH:MM", group = "Session 3")
+sessTz_2 = input.string("UTC+8", "TZ", options = ["UTC-10", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC+0", "UTC+1", "UTC+2", "UTC+3", "UTC+3:30", "UTC+4", "UTC+5", "UTC+5:30", "UTC+5:45", "UTC+6", "UTC+6:30", "UTC+7", "UTC+8", "UTC+9", "UTC+9:30", "UTC+10", "UTC+11", "UTC+12", "UTC+12:45", "UTC+13"], group = "Session 3", inline = "s2z")
+sessColor_2 = input.color(color.new(#00BFA5, 82), "Color", group = "Session 3", inline = "s2c")
+sessShowBox_2 = input.bool(true, "OR box", group = "Session 3", inline = "s2b")
+sessShowLbl_2 = input.bool(true, "Labels", group = "Session 3", inline = "s2l")
+
+grpVwap = "Anchored VWAP"
+vwapAnchorPick = input.string("London Open", "Anchor", options = ["London Open", "New York", "Asia", "Session 1", "Session 2", "Session 3"], group = grpVwap)
+showVwap = input.bool(true, "Show VWAP", group = grpVwap)
+showVwapClouds = input.bool(true, "Show Band2–Band3 clouds", group = grpVwap)
+band2Mult = input.float(2.01, "Band 2 σ", step = 0.01, minval = 0.01, group = grpVwap)
+band3Mult = input.float(2.51, "Band 3 σ", step = 0.01, minval = 0.01, group = grpVwap)
+
+grpF = "Filters"
+useBody = input.bool(true, "BODY", inline = "f1", group = grpF)
+useWick = input.bool(true, "WICK", inline = "f1", group = grpF)
+useVol = input.bool(true, "VOL", inline = "f2", group = grpF)
+useVwapF = input.bool(true, "VWAP", inline = "f2", group = grpF)
+useEma = input.bool(true, "EMA", inline = "f3", group = grpF)
+useB2 = input.bool(true, "B2", inline = "f3", group = grpF)
+useB3 = input.bool(true, "B3", group = grpF)
+
+grpFt = "Filter thresholds"
+bodyMinPct = input.float(0.50, "BODY min", minval = 0.0, maxval = 1.0, step = 0.01, group = grpFt)
+wickMaxPct = input.float(0.25, "WICK max", minval = 0.0, maxval = 1.0, step = 0.01, group = grpFt)
+volMaType = input.string("EMA", "Volume MA", options = ["SMA", "EMA", "RMA"], group = grpFt)
+volMaLen = input.int(20, "Vol MA len", minval = 1, group = grpFt)
+emaLen = input.int(20, "EMA len", minval = 1, group = grpFt)
+emaSrc = input.source(close, "EMA source", group = grpFt)
+bandFailMode = input.string("touch", "Band fail mode", options = ["touch", "close"], group = grpFt)
+
+grpL = "Labels"
+labelMode = input.string("status", "Label mode", options = ["status", "failed_codes", "grade", "score"], group = grpL)
+showLabels = input.bool(true, "Show labels", group = grpL)
+
+grpTbl = "Statistics table"
+showStatsTable = input.bool(true, "Show stats table", group = grpTbl)
+
+// ---------------------------------------------------------------------------------------------------------------------
+parseHHMM(string s) =>
+    sc = str.replace_all(s, " ", "")
+    p = str.pos(sc, ":")
+    ok = p > 0 and p < str.length(sc) - 1
+    h = ok ? str.tonumber(str.substring(sc, 0, p)) : 8.0
+    m = ok ? str.tonumber(str.substring(sc, p + 1, str.length(sc))) : 0.0
+    int(math.round(nz(h, 8) * 60 + nz(m, 0)))
+
+dayKey(int tt, string tzs) =>
+    year(tt, tzs) * 10000 + month(tt, tzs) * 100 + dayofmonth(tt, tzs)
+
+inORWindow(int tt, string tzs, int startMin, int durMin) =>
+    lm = int(hour(tt, tzs)) * 60 + int(minute(tt, tzs))
+    lm >= startMin and lm < startMin + durMin
+
+volMaCalc(float v, int len, string typ) =>
+    typ == "SMA" ? ta.sma(v, len) : typ == "RMA" ? ta.rma(v, len) : ta.ema(v, len)
+
+anchorSessIdx() =>
+    vwapAnchorPick == "Session 1" or vwapAnchorPick == "London Open" ? 0 :
+     vwapAnchorPick == "Session 2" or vwapAnchorPick == "New York" ? 1 :
+     vwapAnchorPick == "Session 3" or vwapAnchorPick == "Asia" ? 2 : 0
+
+sessEn = array.from(sessEnabled_0, sessEnabled_1, sessEnabled_2)
+sessNm = array.from(sessName_0, sessName_1, sessName_2)
+sessSt = array.from(parseHHMM(sessStart_0), parseHHMM(sessStart_1), parseHHMM(sessStart_2))
+sessTz = array.from(sessTz_0, sessTz_1, sessTz_2)
+sessColor = array.from(sessColor_0, sessColor_1, sessColor_2)
+sessBox = array.from(sessShowBox_0, sessShowBox_1, sessShowBox_2)
+sessLbl = array.from(sessShowLbl_0, sessShowLbl_1, sessShowLbl_2)
+
+gradeFromFails(int n) =>
+    n <= 0 ? "A" : n == 1 ? "B" : n == 2 ? "C" : "D"
+
+// ---------------------------------------------------------------------------------------------------------------------
+calcTfPipe() =>
+    dur = orDurResolved()
+    aIdx = anchorSessIdx()
+    aTz = array.get(sessTz, aIdx)
+    aStart = array.get(sessSt, aIdx)
+
+    var orh = array.new_float(3, na)
+    var orl = array.new_float(3, na)
+    var orTstart = array.new_int(3, na)
+    var orTend = array.new_int(3, na)
+    var orFin = array.new_bool(3, false)
+    var opn = array.new_float(3, na)
+    var bullF = array.new_bool(3, false)
+    var bearF = array.new_bool(3, false)
+    var anyF = array.new_bool(3, false)
+
+    // R stats: track excursion only for the first breakout direction of the session day (spec §19.1)
+    var mFav = array.new_float(3, na)
+    var mAdv = array.new_float(3, na)
+    var rArm = array.new_int(3, 0)
+    var tBu = array.new_bool(3, false)
+    var tBe = array.new_bool(3, false)
+
+    var float pV = 0.0
+    var float sV = 0.0
+    var float eE = 0.0
+
+    tt = time
+    typ = hlc3
+    vma = volMaCalc(volume, volMaLen, volMaType)
+    ema = ta.ema(emaSrc, emaLen)
+
+    float vw = na
+    float sd = na
+    float b2u = na
+    float b2d = na
+    float b3u = na
+    float b3d = na
+
+    inA = array.get(sessEn, aIdx) and inORWindow(tt, aTz, aStart, dur)
+    inA1 = array.get(sessEn, aIdx) and inORWindow(tt[1], aTz, aStart, dur)
+    entA = inA and not inA1
+    if entA
+        pV := 0.0
+        sV := 0.0
+        eE := 0.0
+
+    if array.get(sessEn, aIdx) and (int(hour(tt, aTz)) * 60 + int(minute(tt, aTz)) >= aStart or inA)
+        sV += nz(volume, 0.0)
+        pV += typ * nz(volume, 0.0)
+        if sV > 0.0
+            vw := pV / sV
+            eE += nz(volume, 0.0) * math.pow(typ - vw, 2)
+            sd := math.sqrt(eE / sV)
+            b2u := vw + band2Mult * sd
+            b2d := vw - band2Mult * sd
+            b3u := vw + band3Mult * sd
+            b3d := vw - band3Mult * sd
+
+    var int bxG0 = 0
+    var int bxG1 = 0
+    var int bxG2 = 0
+    int tS0 = na
+    int tE0 = na
+    int tS1 = na
+    int tE1 = na
+    int tS2 = na
+    int tE2 = na
+
+    for i = 0 to 2
+        if array.get(sessEn, i)
+            tzs = array.get(sessTz, i)
+            sm = array.get(sessSt, i)
+            dk = dayKey(tt, tzs)
+            dk1 = dayKey(tt[1], tzs)
+            newD = dk != dk1
+            ins = inORWindow(tt, tzs, sm, dur)
+            ins1 = inORWindow(tt[1], tzs, sm, dur)
+            ent = ins and not ins1
+            exit = not ins and ins1
+
+            if newD
+                array.set(orh, i, na)
+                array.set(orl, i, na)
+                array.set(orTstart, i, na)
+                array.set(orTend, i, na)
+                array.set(orFin, i, false)
+                array.set(bullF, i, false)
+                array.set(bearF, i, false)
+                array.set(anyF, i, false)
+                array.set(mFav, i, na)
+                array.set(mAdv, i, na)
+                array.set(rArm, i, 0)
+                array.set(tBu, i, false)
+                array.set(tBe, i, false)
+
+            if ins
+                if ent
+                    array.set(orTstart, i, time)
+                array.set(orTend, i, time)
+                hh = array.get(orh, i)
+                ll = array.get(orl, i)
+                if na(hh) or ent
+                    array.set(orh, i, high)
+                    array.set(orl, i, low)
+                    array.set(opn, i, open)
+                else
+                    array.set(orh, i, math.max(hh, high))
+                    array.set(orl, i, math.min(ll, low))
+            if exit
+                array.set(orFin, i, true)
+                if i == 0
+                    bxG0 := bxG0 + 1
+                    tS0 := array.get(orTstart, i)
+                    tE0 := array.get(orTend, i)
+                else if i == 1
+                    bxG1 := bxG1 + 1
+                    tS1 := array.get(orTstart, i)
+                    tE1 := array.get(orTend, i)
+                else
+                    bxG2 := bxG2 + 1
+                    tS2 := array.get(orTstart, i)
+                    tE2 := array.get(orTend, i)
+
+    // Per-session breakout labels (first crossing only)
+    string t0 = na
+    string t1 = na
+    string t2 = na
+    float d0 = na
+    float d1 = na
+    float d2 = na
+    float y0 = na
+    float y1 = na
+    float y2 = na
+    float n0 = 0.0
+    float n1 = 0.0
+    float n2 = 0.0
+
+    for i = 0 to 2
+        if array.get(sessEn, i) and array.get(orFin, i)
+            oH = array.get(orh, i)
+            oL = array.get(orl, i)
+            allowBull = not array.get(bullF, i)
+            allowBear = not array.get(bearF, i)
+            if limitOneBreakoutTotal and array.get(anyF, i)
+                allowBull := false
+                allowBear := false
+
+            bool bullHit = false
+            bool bearHit = false
+            if breakoutMode == "close"
+                bullHit := allowBull and close > oH and close[1] <= oH
+                bearHit := allowBear and close < oL and close[1] >= oL
+            else
+                bullHit := allowBull and high > oH and high[1] <= oH
+                bearHit := allowBear and low < oL and low[1] >= oL
+
+            if bullHit or bearHit
+                dirBull = bullHit and not bearHit ? true : bearHit and not bullHit ? false : close >= open
+
+                rng = high - low
+                bodyR = rng > 0 ? math.abs(close - open) / rng : 0.0
+                wickR = rng > 0 ? (dirBull ? (high - close) / rng : (close - low) / rng) : 1.0
+
+                failB = rng == 0 or bodyR < bodyMinPct
+                failW = rng == 0 or wickR > wickMaxPct
+                failV = not (volume >= vma)
+                failVw = dirBull ? close <= nz(vw, close) : close >= nz(vw, close)
+                failEm = dirBull ? close <= ema : close >= ema
+
+                useH = bandFailMode == "touch" ? high : close
+                useL = bandFailMode == "touch" ? low : close
+                fail2 = dirBull ? useH >= nz(b2u, useH) : useL <= nz(b2d, useL)
+                fail3 = dirBull ? useH >= nz(b3u, useH) : useL <= nz(b3d, useL)
+
+                int fails = 0
+                int enab = 0
+                if useBody
+                    enab += 1
+                    fails += failB ? 1 : 0
+                if useWick
+                    enab += 1
+                    fails += failW ? 1 : 0
+                if useVol
+                    enab += 1
+                    fails += failV ? 1 : 0
+                if useVwapF
+                    enab += 1
+                    fails += failVw ? 1 : 0
+                if useEma
+                    enab += 1
+                    fails += failEm ? 1 : 0
+                if useB2
+                    enab += 1
+                    fails += fail2 ? 1 : 0
+                if useB3
+                    enab += 1
+                    fails += fail3 ? 1 : 0
+
+                int pass = enab - fails
+                bool ok = enab > 0 and fails == 0
+
+                string txt = ""
+                if labelMode == "status"
+                    txt := ok ? "OK" : "FAIL"
+                else if labelMode == "failed_codes"
+                    string parts = ""
+                    if useBody and failB
+                        parts := parts == "" ? "BODY" : parts + ",BODY"
+                    if useWick and failW
+                        parts := parts == "" ? "WICK" : parts + ",WICK"
+                    if useVol and failV
+                        parts := parts == "" ? "VOL" : parts + ",VOL"
+                    if useVwapF and failVw
+                        parts := parts == "" ? "VWAP" : parts + ",VWAP"
+                    if useEma and failEm
+                        parts := parts == "" ? "EMA" : parts + ",EMA"
+                    if useB2 and fail2
+                        parts := parts == "" ? "B2" : parts + ",B2"
+                    if useB3 and fail3
+                        parts := parts == "" ? "B3" : parts + ",B3"
+                    txt := parts == "" ? "OK" : parts
+                else if labelMode == "grade"
+                    txt := gradeFromFails(fails)
+                else
+                    txt := enab > 0 ? str.tostring(pass) + "/" + str.tostring(enab) : "—"
+
+                float yi = dirBull ? high : low
+                float di = dirBull ? 1.0 : -1.0
+
+                if i == 0
+                    t0 := txt
+                    d0 := di
+                    y0 := yi
+                    n0 := 1.0
+                else if i == 1
+                    t1 := txt
+                    d1 := di
+                    y1 := yi
+                    n1 := 1.0
+                else
+                    t2 := txt
+                    d2 := di
+                    y2 := yi
+                    n2 := 1.0
+
+                if dirBull
+                    array.set(bullF, i, true)
+                    array.set(tBu, i, true)
+                    if array.get(rArm, i) == 0
+                        array.set(rArm, i, 1)
+                else
+                    array.set(bearF, i, true)
+                    array.set(tBe, i, true)
+                    if array.get(rArm, i) == 0
+                        array.set(rArm, i, -1)
+                array.set(anyF, i, true)
+
+    // Post-breakout R (runs after rArm / tBu / tBe updates on this bar)
+    for i = 0 to 2
+        if array.get(sessEn, i) and array.get(orFin, i)
+            oH = array.get(orh, i)
+            oL = array.get(orl, i)
+            R = nz(oH - oL, 0.0)
+            ra = array.get(rArm, i)
+            if R > 0.0 and ra != 0
+                if ra == 1 and array.get(tBu, i)
+                    float favB = (high - oH) / R
+                    float advB = (oH - low) / R
+                    array.set(mFav, i, na(array.get(mFav, i)) ? favB : math.max(array.get(mFav, i), favB))
+                    array.set(mAdv, i, na(array.get(mAdv, i)) ? advB : math.max(array.get(mAdv, i), advB))
+                if ra == -1 and array.get(tBe, i)
+                    float favBe = (oL - low) / R
+                    float advBe = (high - oL) / R
+                    array.set(mFav, i, na(array.get(mFav, i)) ? favBe : math.max(array.get(mFav, i), favBe))
+                    array.set(mAdv, i, na(array.get(mAdv, i)) ? advBe : math.max(array.get(mAdv, i), advBe))
+
+    o0h = array.get(orh, 0)
+    o0l = array.get(orl, 0)
+    o1h = array.get(orh, 1)
+    o1l = array.get(orl, 1)
+    o2h = array.get(orh, 2)
+    o2l = array.get(orl, 2)
+    rng0 = nz(o0h - o0l, na)
+    rng1 = nz(o1h - o1l, na)
+    rng2 = nz(o2h - o2l, na)
+    op0 = array.get(opn, 0)
+    op1 = array.get(opn, 1)
+    op2 = array.get(opn, 2)
+    pct0 = not na(rng0) and not na(op0) and op0 != 0 ? rng0 / op0 * 100 : na
+    pct1 = not na(rng1) and not na(op1) and op1 != 0 ? rng1 / op1 * 100 : na
+    pct2 = not na(rng2) and not na(op2) and op2 != 0 ? rng2 / op2 * 100 : na
+
+    mf0 = array.get(mFav, 0)
+    mf1 = array.get(mFav, 1)
+    mf2 = array.get(mFav, 2)
+    ma0 = array.get(mAdv, 0)
+    ma1 = array.get(mAdv, 1)
+    ma2 = array.get(mAdv, 2)
+    [vw, b2u, b2d, b3u, b3d, o0h, o0l, o1h, o1l, o2h, o2l, rng0, rng1, rng2, pct0, pct1, pct2, mf0, mf1, mf2, ma0, ma1, ma2, n0, n1, n2, t0, t1, t2, d0, d1, d2, y0, y1, y2, tS0, tE0, tS1, tE1, tS2, tE2, float(bxG0), float(bxG1), float(bxG2)]
+
+[vWapS, b2uS, b2dS, b3uS, b3dS, s0h, s0l, s1h, s1l, s2h, s2l, rg0, rg1, rg2, pc0, pc1, pc2, mxF0, mxF1, mxF2, mxA0, mxA1, mxA2, nBr0, nBr1, nBr2, lb0, lb1, lb2, dir0, dir1, dir2, yBr0, yBr1, yBr2, orTS0, orTE0, orTS1, orTE1, orTS2, orTE2, orGen0, orGen1, orGen2] = request.security(syminfo.tickerid, calcTf, calcTfPipe(), barmerge.gaps_off, barmerge.lookahead_off)
+
+calcSec = int(timeframe.in_seconds(calcTf)) * 1000
+orRight(tE) => na(tE) ? na : tE + calcSec
+
+plot(showVwap ? vWapS : na, "VWAP", color = color.white, linewidth = 2)
+plB2u = plot(showVwap ? b2uS : na, "Band2+", display = display.none)
+plB2d = plot(showVwap ? b2dS : na, "Band2−", display = display.none)
+plB3u = plot(showVwap ? b3uS : na, "Band3+", display = display.none)
+plB3d = plot(showVwap ? b3dS : na, "Band3−", display = display.none)
+fill(plB2u, plB3u, showVwap and showVwapClouds ? color.new(color.red, 78) : na, title = "Upper cloud")
+fill(plB3d, plB2d, showVwap and showVwapClouds ? color.new(color.teal, 78) : na, title = "Lower cloud")
+
+f_plot_or(bool en, bool bx, float hi, float lo) =>
+    show = en and bx and showHistoricalSessions
+    [show ? hi : na, show ? lo : na]
+
+[p00h, p00l] = f_plot_or(sessEnabled_0, sessShowBox_0, s0h, s0l)
+[p01h, p01l] = f_plot_or(sessEnabled_1, sessShowBox_1, s1h, s1l)
+[p02h, p02l] = f_plot_or(sessEnabled_2, sessShowBox_2, s2h, s2l)
+
+// Opening range rectangles — use monotonic orGen* (not ta.crossover on pulses): MTF security often drops single-bar pulses on chart TF > calc TF.
+orBxNew(float gen, float gen1) =>
+    gen > nz(gen1, 0)
+
+if barstate.isconfirmed and sessEnabled_0 and sessShowBox_0 and orBxNew(orGen0, orGen0[1]) and not na(orTS0) and not na(orTE0) and not na(s0h) and not na(s0l)
+    rgt = orRight(orTE0)
+    if not na(rgt) and orTS0 < rgt
+        box.new(orTS0, s0h, rgt, s0l, xloc = xloc.bar_time, border_color = sessColor_0, bgcolor = color.new(sessColor_0, 88), border_width = 1, force_overlay = true)
+if barstate.isconfirmed and sessEnabled_1 and sessShowBox_1 and orBxNew(orGen1, orGen1[1]) and not na(orTS1) and not na(orTE1) and not na(s1h) and not na(s1l)
+    rgt = orRight(orTE1)
+    if not na(rgt) and orTS1 < rgt
+        box.new(orTS1, s1h, rgt, s1l, xloc = xloc.bar_time, border_color = sessColor_1, bgcolor = color.new(sessColor_1, 88), border_width = 1, force_overlay = true)
+if barstate.isconfirmed and sessEnabled_2 and sessShowBox_2 and orBxNew(orGen2, orGen2[1]) and not na(orTS2) and not na(orTE2) and not na(s2h) and not na(s2l)
+    rgt = orRight(orTE2)
+    if not na(rgt) and orTS2 < rgt
+        box.new(orTS2, s2h, rgt, s2l, xloc = xloc.bar_time, border_color = sessColor_2, bgcolor = color.new(sessColor_2, 88), border_width = 1, force_overlay = true)
+
+plot(p00h, "S0 ORH", color = sessColor_0, linewidth = 1, style = plot.style_linebr)
+plot(p00l, "S0 ORL", color = sessColor_0, linewidth = 1, style = plot.style_linebr)
+plot(p01h, "S1 ORH", color = sessColor_1, linewidth = 1, style = plot.style_linebr)
+plot(p01l, "S1 ORL", color = sessColor_1, linewidth = 1, style = plot.style_linebr)
+plot(p02h, "S2 ORH", color = sessColor_2, linewidth = 1, style = plot.style_linebr)
+plot(p02l, "S2 ORL", color = sessColor_2, linewidth = 1, style = plot.style_linebr)
+
+new0 = showLabels and ta.crossover(nz(nBr0, 0), 0.5)
+new1 = showLabels and ta.crossover(nz(nBr1, 0), 0.5)
+new2 = showLabels and ta.crossover(nz(nBr2, 0), 0.5)
+
+if new0 and sessShowLbl_0
+    label.new(bar_index, nz(yBr0, close), text = lb0, color = sessColor_0, style = nz(dir0, 0) > 0 ? label.style_label_down : label.style_label_up, textcolor = color.white, size = size.small)
+if new1 and sessShowLbl_1
+    label.new(bar_index, nz(yBr1, close), text = lb1, color = sessColor_1, style = nz(dir1, 0) > 0 ? label.style_label_down : label.style_label_up, textcolor = color.white, size = size.small)
+if new2 and sessShowLbl_2
+    label.new(bar_index, nz(yBr2, close), text = lb2, color = sessColor_2, style = nz(dir2, 0) > 0 ? label.style_label_down : label.style_label_up, textcolor = color.white, size = size.small)
+
+var table tbl = table.new(position.top_right, 5, 4, border_width = 1)
+if barstate.islast
+    if showStatsTable
+        hdrBg = color.new(color.gray, 70)
+        table.cell(tbl, 0, 0, "Session", bgcolor = hdrBg, text_size = size.tiny)
+        table.cell(tbl, 1, 0, "Range", bgcolor = hdrBg, text_size = size.tiny)
+        table.cell(tbl, 2, 0, "Range %", bgcolor = hdrBg, text_size = size.tiny)
+        table.cell(tbl, 3, 0, "Max R▲", bgcolor = hdrBg, text_size = size.tiny)
+        table.cell(tbl, 4, 0, "Max R▼", bgcolor = hdrBg, text_size = size.tiny)
+        tr = 1
+        if sessEnabled_0
+            table.cell(tbl, 0, tr, sessName_0, text_size = size.tiny)
+            table.cell(tbl, 1, tr, na(rg0) ? "—" : str.tostring(rg0, "#.####"), text_size = size.tiny)
+            table.cell(tbl, 2, tr, na(pc0) ? "—" : str.tostring(pc0, "#.##"), text_size = size.tiny)
+            table.cell(tbl, 3, tr, na(mxF0) ? "—" : str.tostring(mxF0, "#.##"), text_size = size.tiny)
+            table.cell(tbl, 4, tr, na(mxA0) ? "—" : str.tostring(mxA0, "#.##"), text_size = size.tiny)
+            tr := tr + 1
+        if sessEnabled_1
+            table.cell(tbl, 0, tr, sessName_1, text_size = size.tiny)
+            table.cell(tbl, 1, tr, na(rg1) ? "—" : str.tostring(rg1, "#.####"), text_size = size.tiny)
+            table.cell(tbl, 2, tr, na(pc1) ? "—" : str.tostring(pc1, "#.##"), text_size = size.tiny)
+            table.cell(tbl, 3, tr, na(mxF1) ? "—" : str.tostring(mxF1, "#.##"), text_size = size.tiny)
+            table.cell(tbl, 4, tr, na(mxA1) ? "—" : str.tostring(mxA1, "#.##"), text_size = size.tiny)
+            tr := tr + 1
+        if sessEnabled_2
+            table.cell(tbl, 0, tr, sessName_2, text_size = size.tiny)
+            table.cell(tbl, 1, tr, na(rg2) ? "—" : str.tostring(rg2, "#.####"), text_size = size.tiny)
+            table.cell(tbl, 2, tr, na(pc2) ? "—" : str.tostring(pc2, "#.##"), text_size = size.tiny)
+            table.cell(tbl, 3, tr, na(mxF2) ? "—" : str.tostring(mxF2, "#.##"), text_size = size.tiny)
+            table.cell(tbl, 4, tr, na(mxA2) ? "—" : str.tostring(mxA2, "#.##"), text_size = size.tiny)

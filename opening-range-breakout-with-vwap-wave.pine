@@ -4,14 +4,13 @@
 // © n8rzz - Nate Geslin
 
 // @version=6
-indicator("Opening Range with Breakouts, Targets & Opportunity Window", shorttitle = "ORB Op Win", overlay = true, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
+indicator("Opening Range with Breakouts and VWAP Wave", shorttitle = "ORB Op VVWAP Wave", overlay = true, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
 
 // ---------------------------------------------------------------------------------------------------------------------}
 // inputs
 // ---------------------------------------------------------------------------------------------------------------------{
 // Historical Display
 showHist = input.bool(false, title = "Show Historical Data", group = "Historical Display", tooltip = "Displays All Data from Previous Sessions")
-
 
 // Timezone
 timezoneInputGroup = "Timezone"
@@ -21,9 +20,6 @@ tz = input.string("UTC-5", title = "Timezone", group = timezoneInputGroup, toolt
 orSizeTargetInputGroup = "Opening Range Size Target"
 orTimePeriod = input.timeframe("60", title = "Length", group = "Opening Range", tooltip = "Sets the Length of Time used for determining Opening Range") 
 customRangeSession = input.session("0830-0930", title = "Opening Range Timeframe", group = orSizeTargetInputGroup)
-showSecondRange = input.bool(true, title = "Show Secondary OR Session", group = orSizeTargetInputGroup)
-secondRangeSession = input.session("0100-0200", title = "Secondary OR Timeframe", group = orSizeTargetInputGroup)
-secondRangeColor = input.color(color.new(color.blue, 84), title = "Secondary OR Fill Color", group = orSizeTargetInputGroup)
 
 
 // Opening Range Size (% of current price)
@@ -46,7 +42,6 @@ shouldShowTargets = input.bool(true, title = "Show Targets", group = "Targets")
 // Opportunity Window
 opportunityWindowInputGroup = "Opportunity Window"
 opportunityWindowSession = input.session("0930-1200", title = "Start + End", group = opportunityWindowInputGroup, inline = "OWTime")
-secondaryOpportunityWindowSession = input.session("0200-0600", title = "Secondary Start + End", group = opportunityWindowInputGroup, inline = "OWTime2")
 owColor = input.color(color.new(#7b1fa2, 85), title = "Opportunity Window Fill Color", group = opportunityWindowInputGroup)
 shouldShowOpportunityWindowMidline = input.bool(true, "Show Midline", group = opportunityWindowInputGroup)
 shouldShowOpportunityWindow = input.bool(true, title = "Show Opportunity Window", group = opportunityWindowInputGroup)
@@ -152,11 +147,6 @@ var bool  ow_token = false
 var float owh      = na
 var float owl      = na
 var box   ow_bx    = na
-var bool  sec_ow_sesh  = false
-var bool  sec_ow_token = false
-var float sec_owh      = na
-var float sec_owl      = na
-var box   sec_ow_bx    = na
 var line  ow_midline = na
 var label ow_midline_label = na
 
@@ -174,14 +164,6 @@ var int up_count = na
 var int down_count = na
 
 var box or_bx = na
-var bool second_or_sesh = false
-var bool second_or_token = false
-var bool second_or_done = false
-var float second_orh = na
-var float second_orl = na
-var int second_or_start_bar = na
-var int second_or_start_time = na
-var box second_or_bx = na
 
 var int  day_dir = 0
 var down_check = false
@@ -226,45 +208,9 @@ orm = math.avg(orh,orl)
 orw = math.abs(orh-orl)    
 h_src = targetCrossSource == "Close" ? close : high
 l_src = targetCrossSource == "Close" ? close : low
-or_len_secs = timeframe.in_seconds(orTimePeriod)
-or_len_ms = int(math.max(1, or_len_secs) * 1000)
 or_sesh := not na(time(timeframe.period, customRangeSession, tz))
 or_start = or_sesh and not or_sesh[1]
 or_end = or_sesh[1] and not or_sesh
-second_or_in_session = showSecondRange and not na(time(timeframe.period, secondRangeSession, tz))
-second_or_start = second_or_in_session and not second_or_in_session[1]
-second_or_session_end = second_or_in_session[1] and not second_or_in_session
-second_or_elapsed_ms = na(second_or_start_time) ? 0 : int(time - second_or_start_time)
-second_or_duration_reached = second_or_in_session and not second_or_done and second_or_elapsed_ms >= or_len_ms
-second_or_sesh := second_or_in_session and not second_or_done
-
-if second_or_start
-    if showHist == false and not na(second_or_bx)
-        second_or_bx.delete()
-    second_orh := high
-    second_orl := low
-    second_or_start_bar := bar_index
-    second_or_start_time := time
-    second_or_done := false
-    second_or_token := false
-    second_or_bx := box.new(bar_index, second_orh, bar_index, second_orl, bgcolor = secondRangeColor, border_width = 0)
-
-if second_or_sesh and not na(second_or_bx)
-    if high > second_orh
-        second_orh := high
-    if low < second_orl
-        second_orl := low
-    second_or_bx.set_top(second_orh)
-    second_or_bx.set_bottom(second_orl)
-    second_or_bx.set_right(bar_index)
-    second_or_bx.set_bgcolor(secondRangeColor)
-    if second_orh != second_orl
-        second_or_token := true
-
-if (second_or_duration_reached or second_or_session_end) and not second_or_done
-    second_or_done := true
-    if not na(second_or_bx)
-        second_or_bx.set_right(bar_index)
 
 // On Start of OR Session
 if or_start
@@ -458,9 +404,6 @@ if or_end and or_token
 ow_sesh := shouldShowOpportunityWindow and not na(time(timeframe.period, opportunityWindowSession, tz))
 ow_start = ow_sesh and not ow_sesh[1]
 ow_end   = ow_sesh[1] and not ow_sesh
-sec_ow_sesh := shouldShowOpportunityWindow and showSecondRange and not na(time(timeframe.period, secondaryOpportunityWindowSession, tz))
-sec_ow_start = sec_ow_sesh and not sec_ow_sesh[1]
-sec_ow_end   = sec_ow_sesh[1] and not sec_ow_sesh
 
 // Full Trading Session Detection (from market open to close) for midline - using built-in session detection
 full_trading_session := session.ismarket
@@ -582,44 +525,6 @@ if ow_sesh
 
     if top_now != bot_now
         ow_token := true
-
-// On Start of Secondary Opportunity Window (anchored to secondary OR)
-if sec_ow_start
-    if showHist == false and na(sec_ow_bx) == false
-        sec_ow_bx.delete()
-
-    // Use secondary ORH/ORL if available; otherwise fall back to current bar H/L
-    sec_owh := na(second_orh) ? high : second_orh
-    sec_owl := na(second_orl) ? low  : second_orl
-    sec_ow_border_color = color.rgb(color.r(secondRangeColor), color.g(secondRangeColor), color.b(secondRangeColor), 20)
-    sec_ow_token := false
-    sec_ow_bx := box.new(bar_index, sec_owh, bar_index, sec_owl, bgcolor = color.new(secondRangeColor, 100), border_color = sec_ow_border_color, border_width = 1)
-
-if sec_ow_sesh and not na(sec_ow_bx)
-    // Glue secondary OW height to secondary OR height (fallback to start H/L until secondary OR exists)
-    sec_top_now = na(second_orh) ? sec_owh : second_orh
-    sec_bot_now = na(second_orl) ? sec_owl : second_orl
-    sec_ow_bx.set_top(sec_top_now)
-    sec_ow_bx.set_bottom(sec_bot_now)
-
-    // Right edge of secondary OW box: parse session end HHMM and extend visually.
-    _secOwParts = str.split(secondaryOpportunityWindowSession, "-")
-    _secEndStr  = array.size(_secOwParts) >= 2 ? array.get(_secOwParts, 1) : "0000"
-    _secEndH    = str.tonumber(str.substring(_secEndStr, 0, 2))
-    _secEndM    = str.tonumber(str.substring(_secEndStr, 2, 4))
-
-    _secsNowS = hour * 3600 + minute * 60 + second
-    _secsEndS = _secEndH * 3600 + _secEndM * 60
-    _secsAheadS = math.max(0, _secsEndS - _secsNowS)
-
-    _barsAheadS = math.ceil(_secsAheadS / timeframe.in_seconds(timeframe.period))
-    sec_ow_bx.set_right(bar_index + _barsAheadS)
-    sec_ow_bx.set_bgcolor(color.new(secondRangeColor, 100))
-    sec_ow_bx.set_border_color(color.rgb(color.r(secondRangeColor), color.g(secondRangeColor), color.b(secondRangeColor), 20))
-    sec_ow_bx.set_border_width(1)
-
-    if sec_top_now != sec_bot_now
-        sec_ow_token := true
     
     // Midline at (ORH+ORL)/2 from `or_start_bar`; Y updates if OR still forming; X2 follows price through day.
     if shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
