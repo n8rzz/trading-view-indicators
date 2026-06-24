@@ -89,6 +89,8 @@ isAlertBelowEnabled = input.bool(true,  title = "Enable Alert: Cross Below ORL",
 
 invis = color.rgb(0,0,0,100)
 orLineColor = color.new(color.purple, 50)
+orSizeLabelPaddingBottom = syminfo.mintick * 5
+secOwExtLineColor = color.new(color.blue, 0)
 
 //---------------------------------------------------------------------------------------------------------------------}
 // Error
@@ -124,6 +126,17 @@ ma_calc(_src, _len, _t) =>
 // Smallest integer >= _val (ceil) without ta.ceil, used for target index math.
 get_1up(_val) => (_val - math.floor(_val)) > 0 ? int(math.floor(_val) + 1) : int(_val)
 
+// Bars from the current bar until a session string's end time (HHMM-HHMM).
+barsUntilSessionEnd(_sessionStr) =>
+    _parts = str.split(_sessionStr, "-")
+    _endStr = array.size(_parts) >= 2 ? array.get(_parts, 1) : "0000"
+    _endH = int(nz(str.tonumber(str.substring(_endStr, 0, 2)), 0))
+    _endM = int(nz(str.tonumber(str.substring(_endStr, 2, 4)), 0))
+    _secsNow = hour * 3600 + minute * 60 + second
+    _secsEnd = _endH * 3600 + _endM * 60
+    _secsAhead = math.max(0, _secsEnd - _secsNow)
+    int(math.ceil(_secsAhead / math.max(1, timeframe.in_seconds(timeframe.period))))
+
 // OR box background: neutral until OR completes; then green if width ≥ `close * orSizePct%`, else red.
 getSizeBg(_orh, _orl, _complete) =>
     _orWidth = na(_orh) or na(_orl) ? na : math.abs(_orh - _orl)
@@ -157,6 +170,9 @@ var bool  sec_ow_token = false
 var float sec_owh      = na
 var float sec_owl      = na
 var box   sec_ow_bx    = na
+var line  sec_ow_h_ext = na
+var line  sec_ow_l_ext = na
+var int   sec_ow_ext_x1 = na
 var line  ow_midline = na
 var label ow_midline_label = na
 
@@ -341,7 +357,7 @@ if or_sesh
         or_token := true
 
     // OR size label (Δ / ratio / target size): compares actual OR width to `close * orSizePct%`.
-    // Ratio ≥ 1 → lime text; otherwise red. Placed above the OR box with a fixed tick-aware offset.
+    // Ratio ≥ 1 → lime text; otherwise red. Anchored a fixed tick distance above the OR top.
     if shouldShowOrbSizeLabel
         _orLeft = box.get_left(or_bx)
         _orRight = box.get_right(or_bx)
@@ -349,17 +365,18 @@ if or_sesh
         _calculatedSize = close * (orSizePct * 0.01)
         _rangeRatio = _calculatedSize > 0 ? orw / _calculatedSize : 0
         _orTextColor = _rangeRatio >= 1 ? color.new(#00ff00, 0) : color.red
-        yPad = math.max(_calculatedSize * 0.52, syminfo.mintick * 28)
-        _yPos = _orTop + yPad
-        _orText  = str.tostring(orw, format.mintick) + " Δ" + "\n" + str.tostring(_rangeRatio, "#.##") + " ◇" + "\n" + str.tostring(_calculatedSize, format.mintick) + " ="
+        _yPos = _orTop + orSizeLabelPaddingBottom
+        _orText  = "Δ " + str.tostring(orw, format.mintick) + "\n" + "◇ " + str.tostring(_rangeRatio, "#.##") + "\n" + "= " + str.tostring(_calculatedSize, format.mintick)
         
         if na(or_range_lab)
-            or_range_lab := label.new(x = _midX, y = _yPos, text = _orText, style = label.style_label_center, textcolor = _orTextColor, color = invis, size = txtSize)
+            or_range_lab := label.new(x = _midX, y = _yPos, text = _orText, style = label.style_label_down, textcolor = _orTextColor, color = invis, size = txtSize, textalign = text.align_left)
         else
             label.set_x(or_range_lab, _midX)
             label.set_y(or_range_lab, _yPos)
             label.set_text(or_range_lab, _orText)
             label.set_textcolor(or_range_lab, _orTextColor)
+            label.set_style(or_range_lab, label.style_label_down)
+            label.set_textalign(or_range_lab, text.align_left)
     else if not na(or_range_lab)
         label.delete(or_range_lab)
         or_range_lab := na
@@ -440,15 +457,17 @@ if or_end and or_token
         _calculatedSize = close * (orSizePct * 0.01)
         _rangeRatio = _calculatedSize > 0 ? orw / _calculatedSize : 0
         _orTextColor = _rangeRatio >= 1 ? color.lime : color.red
-        _yPosF = box.get_top(or_bx) + math.max(_calculatedSize * 0.52, syminfo.mintick * 28)
-        _finalTxt = str.tostring(orw, format.mintick) + " Δ" + "\n" + str.tostring(_rangeRatio, "#.##") + " ◇" + "\n" + str.tostring(_calculatedSize, format.mintick) + " ="
+        _yPosF = box.get_top(or_bx) + orSizeLabelPaddingBottom
+        _finalTxt = "Δ " + str.tostring(orw, format.mintick) + "\n" + "◇ " + str.tostring(_rangeRatio, "#.##") + "\n" + "= " + str.tostring(_calculatedSize, format.mintick)
         if na(or_range_lab)
-            or_range_lab := label.new(_midXF, _yPosF, _finalTxt, style = label.style_label_center, textcolor = _orTextColor, color = invis, size = txtSize)
+            or_range_lab := label.new(_midXF, _yPosF, _finalTxt, style = label.style_label_down, textcolor = _orTextColor, color = invis, size = txtSize, textalign = text.align_left)
         else
             label.set_x(or_range_lab, _midXF)
             label.set_y(or_range_lab, _yPosF)
             label.set_text(or_range_lab, _finalTxt)
             label.set_textcolor(or_range_lab, _orTextColor)
+            label.set_style(or_range_lab, label.style_label_down)
+            label.set_textalign(or_range_lab, text.align_left)
     else if not na(or_range_lab)
         label.delete(or_range_lab)
         or_range_lab := na
@@ -587,13 +606,26 @@ if ow_sesh
 if sec_ow_start
     if showHist == false and na(sec_ow_bx) == false
         sec_ow_bx.delete()
+    if showHist == false and not na(sec_ow_h_ext)
+        sec_ow_h_ext.delete()
+        sec_ow_l_ext.delete()
+        sec_ow_h_ext := na
+        sec_ow_l_ext := na
 
     // Use secondary ORH/ORL if available; otherwise fall back to current bar H/L
     sec_owh := na(second_orh) ? high : second_orh
     sec_owl := na(second_orl) ? low  : second_orl
     sec_ow_border_color = color.rgb(color.r(secondRangeColor), color.g(secondRangeColor), color.b(secondRangeColor), 20)
     sec_ow_token := false
+    sec_ow_ext_x1 := na
     sec_ow_bx := box.new(bar_index, sec_owh, bar_index, sec_owl, bgcolor = color.new(secondRangeColor, 100), border_color = sec_ow_border_color, border_width = 1)
+
+    if shouldShowOpportunityWindow and showSecondRange
+        sec_ow_h_ext := line.new(bar_index, sec_owh, bar_index, sec_owh, color = secOwExtLineColor, style = line.style_dotted, width = 1)
+        sec_ow_l_ext := line.new(bar_index, sec_owl, bar_index, sec_owl, color = secOwExtLineColor, style = line.style_dotted, width = 1)
+
+if sec_ow_end
+    sec_ow_ext_x1 := not na(sec_ow_bx) ? box.get_right(sec_ow_bx) : bar_index
 
 if sec_ow_sesh and not na(sec_ow_bx)
     // Glue secondary OW height to secondary OR height (fallback to start H/L until secondary OR exists)
@@ -620,7 +652,7 @@ if sec_ow_sesh and not na(sec_ow_bx)
 
     if sec_top_now != sec_bot_now
         sec_ow_token := true
-    
+
     // Midline at (ORH+ORL)/2 from `or_start_bar`; Y updates if OR still forming; X2 follows price through day.
     if shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
         ow_midpoint = (orh + orl) / 2
@@ -632,6 +664,22 @@ if sec_ow_sesh and not na(sec_ow_bx)
             label.set_x(ow_midline_label, bar_index)
             label.set_y(ow_midline_label, ow_midpoint)
             label.set_text(ow_midline_label, "MID (" + str.tostring(ow_midpoint, format.mintick) + ")")
+
+// Extend secondary OW high/low as blue dotted lines through main OW session end.
+if shouldShowOpportunityWindow and showSecondRange and not na(sec_ow_h_ext) and not na(sec_ow_l_ext)
+    sec_ext_top = na(second_orh) ? sec_owh : second_orh
+    sec_ext_bot = na(second_orl) ? sec_owl : second_orl
+    _secOwExtX1 = sec_ow_sesh and not na(sec_ow_bx) ? box.get_right(sec_ow_bx) : sec_ow_ext_x1
+    _mainOwEndBar = bar_index + barsUntilSessionEnd(opportunityWindowSession)
+    if not na(_secOwExtX1) and _mainOwEndBar >= _secOwExtX1
+        line.set_x1(sec_ow_h_ext, _secOwExtX1)
+        line.set_x2(sec_ow_h_ext, _mainOwEndBar)
+        line.set_y1(sec_ow_h_ext, sec_ext_top)
+        line.set_y2(sec_ow_h_ext, sec_ext_top)
+        line.set_x1(sec_ow_l_ext, _secOwExtX1)
+        line.set_x2(sec_ow_l_ext, _mainOwEndBar)
+        line.set_y1(sec_ow_l_ext, sec_ext_bot)
+        line.set_y2(sec_ow_l_ext, sec_ext_bot)
 
 // Midline keeps extending after OW session ends while `session.ismarket` (full session) remains true.
 if not ow_sesh and full_trading_session and shouldShowOpportunityWindowMidline and not na(ow_midline) and not na(or_start_bar)
