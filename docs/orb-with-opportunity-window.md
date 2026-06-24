@@ -1,3 +1,9 @@
+---
+title: Opening Range Breakout with Opportunity Window
+description: Intraday ORB system for futures with range quality, VWAP, and target projection.
+category: indicator
+---
+
 # Opening Range Breakout with Opportunity Window (ORB) - Futures Trading Guide
 
 ## Overview

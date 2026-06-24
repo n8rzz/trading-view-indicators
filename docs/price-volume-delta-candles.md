@@ -1,3 +1,9 @@
+---
+title: Price/Volume Delta Candles
+description: Divergence detection between price action and volume delta.
+category: indicator
+---
+
 # Price/Volume Delta Candles Indicator Analysis
 
 ## Overview

@@ -1,0 +1,1675 @@
+<h1 id="cash-secured-put-strategy-guide">Cash-Secured Put Strategy Guide</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This document outlines a systematic approach to selling cash-secured puts using a multi-indicator framework that combines trend structure, volume analysis, market stability, and institutional flow detection. The strategy leverages technical analysis to identify high-probability support zones where selling puts offers favorable risk:reward characteristics.</p>
+
+<p><strong>Strategy Type:</strong> Income generation with defined risk</p>
+
+<p><strong>Capital Requirement:</strong> Cash secured (100% collateral required)</p>
+
+<p><strong>Ideal Outcome:</strong> Collect premium while avoiding assignment, or accept assignment at favorable prices with accumulation signals</p>
+
+<p><strong>Time Horizon:</strong> 30-45 days to expiration (DTE) for optimal theta decay</p>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ul>
+  <li><a href="#the-multi-timeframe-setup">The Multi-Timeframe Setup</a></li>
+  <li><a href="#indicator-integration-framework">Indicator Integration Framework</a></li>
+  <li><a href="#entry-criteria">Entry Criteria</a></li>
+  <li><a href="#position-sizing-rules">Position Sizing Rules</a></li>
+  <li><a href="#strike-selection">Strike Selection</a></li>
+  <li><a href="#risk-management">Risk Management</a></li>
+  <li><a href="#exit-and-adjustment-strategies">Exit and Adjustment Strategies</a></li>
+  <li><a href="#trade-evaluation-checklist">Trade Evaluation Checklist</a></li>
+  <li><a href="#example-trade-scenarios">Example Trade Scenarios</a></li>
+  <li><a href="#advanced-techniques">Advanced Techniques</a></li>
+  <li><a href="#common-mistakes-to-avoid">Common Mistakes to Avoid</a></li>
+</ul>
+
+<hr />
+
+<h2 id="the-multi-timeframe-setup">The Multi-Timeframe Setup</h2>
+
+<h3 id="chart-configuration">Chart Configuration</h3>
+
+<p><strong>Daily Chart (Primary - Strategic View):</strong></p>
+
+<ul>
+  <li><strong>Purpose:</strong> Identify weekly/monthly support zones and trend context</li>
+  <li><strong>Indicators:</strong>
+    <ul>
+      <li>MA High/Low Channel</li>
+      <li>Price/Volume Delta Candles (divergence arrows)</li>
+      <li>Up/Down Volume Ratio</li>
+      <li>Volume Profile (right side)</li>
+    </ul>
+  </li>
+  <li><strong>Usage:</strong> Determines WHERE to sell puts (support levels)</li>
+</ul>
+
+<p><strong>15-Minute Chart (Secondary - Tactical View):</strong></p>
+
+<ul>
+  <li><strong>Purpose:</strong> Time intraday entries and confirm stabilization</li>
+  <li><strong>Indicators:</strong>
+    <ul>
+      <li>MA High/Low Channel (intraday structure)</li>
+      <li>VEI (Volatility Expansion Index)</li>
+      <li>Up/Down Volume Delta</li>
+    </ul>
+  </li>
+  <li><strong>Usage:</strong> Determines WHEN to sell puts (optimal timing)</li>
+</ul>
+
+<h3 id="why-this-combination-works">Why This Combination Works</h3>
+
+<ol>
+  <li><strong>Daily chart</strong> shows institutional accumulation zones (where smart money is buying)</li>
+  <li><strong>15-minute chart</strong> confirms short-term stability (VEI) and momentum shifts</li>
+  <li><strong>Volume analysis</strong> reveals conviction behind support levels</li>
+  <li><strong>Multi-timeframe confluence</strong> dramatically increases probability of success</li>
+</ol>
+
+<hr />
+
+<h2 id="indicator-integration-framework">Indicator Integration Framework</h2>
+
+<h3 id="1-ma-highlow-channel-trend-structure">1. MA High/Low Channel (Trend Structure)</h3>
+
+<p><strong>Daily Chart Usage:</strong></p>
+
+<p><strong>At Channel Low (Bullish Signal):</strong></p>
+
+<ul>
+  <li>Price touching or near the lower channel boundary = structural support</li>
+  <li>Historical price has bounced here repeatedly</li>
+  <li>Best zone to sell puts (support likely to hold)</li>
+</ul>
+
+<p><strong>At Channel Mid-Point (Neutral):</strong></p>
+
+<ul>
+  <li>Price in middle of channel = less defined support</li>
+  <li>Can sell puts but require stronger volume confirmation</li>
+  <li>Use wider strike margins</li>
+</ul>
+
+<p><strong>Below Channel Low (Bearish Warning):</strong></p>
+
+<ul>
+  <li>Price broken below channel = structural breakdown</li>
+  <li>AVOID selling puts until reclaim of channel</li>
+  <li>High risk of continued decline</li>
+</ul>
+
+<p><strong>Strike Selection Guide:</strong></p>
+
+<ul>
+  <li>Sell puts at or just below channel low for maximum safety</li>
+  <li>If price is mid-channel, sell puts at previous channel low test</li>
+</ul>
+
+<h3 id="2-vei---volatility-expansion-index-market-stability-filter">2. VEI - Volatility Expansion Index (Market Stability Filter)</h3>
+
+<h4 id="the-master-gate---check-this-first">The Master Gate - Check This FIRST</h4>
+
+<p><strong>VEI &lt; 0.8 (Ideal - Very Stable):</strong></p>
+
+<ul>
+  <li>✅ Extremely favorable conditions</li>
+  <li>Market structure clean and predictable</li>
+  <li>Sell full position sizes</li>
+  <li>Tighten strike selections (can be more aggressive)</li>
+</ul>
+
+<p><strong>VEI 0.8 - 1.0 (Good - Stable):</strong></p>
+
+<ul>
+  <li>✅ Favorable conditions</li>
+  <li>Normal trading environment</li>
+  <li>Sell standard position sizes</li>
+  <li>Use normal strike selection criteria</li>
+</ul>
+
+<p><strong>VEI 1.0 - 1.2 (Caution - Transitional):</strong></p>
+
+<ul>
+  <li>⚠️ Proceed with caution</li>
+  <li>Market becoming less predictable</li>
+  <li>Reduce position size by 50%</li>
+  <li>Widen strike selections (more conservative)</li>
+  <li>Only take highest-conviction setups</li>
+</ul>
+
+<p><strong>VEI &gt; 1.2 (AVOID - Volatile):</strong></p>
+
+<ul>
+  <li>❌ Unfavorable conditions</li>
+  <li>High risk of blowing through strikes</li>
+  <li>Sell 0-25% position size OR skip entirely</li>
+  <li>Premiums attractive but extremely dangerous</li>
+  <li>Wait for VEI to drop below 1.2</li>
+</ul>
+
+<p><strong>Your Screenshot Shows VEI = 0.9391 = EXCELLENT CONDITIONS</strong> ✅</p>
+
+<h3 id="3-pricevolume-delta-candles-institutional-flow">3. Price/Volume Delta Candles (Institutional Flow)</h3>
+
+<h4 id="bullish-divergence-signals-purple-arrows">Bullish Divergence Signals (Purple Arrows)</h4>
+
+<p><strong>What It Means:</strong></p>
+
+<ul>
+  <li>Price closing down BUT volume delta positive</li>
+  <li>Institutions buying while price appears weak</li>
+  <li>Hidden accumulation happening</li>
+  <li>Support likely to form/hold</li>
+</ul>
+
+<p><strong>How to Use for Put Selling:</strong></p>
+
+<p><strong>Single Purple Arrow:</strong></p>
+
+<ul>
+  <li>Mild accumulation signal</li>
+  <li>Confirms support level</li>
+  <li>Good for conservative put sales</li>
+</ul>
+
+<p><strong>2-3 Consecutive Purple Arrows:</strong></p>
+
+<ul>
+  <li>Strong accumulation signal</li>
+  <li>Institutions aggressively buying dips</li>
+  <li>IDEAL setup for put selling</li>
+  <li>Support very likely to hold</li>
+</ul>
+
+<p><strong>Purple Arrows at Support Level:</strong></p>
+
+<ul>
+  <li>Highest probability setup</li>
+  <li>Support + accumulation = maximum safety</li>
+  <li>Can sell puts at or near current price</li>
+  <li>Low assignment risk</li>
+</ul>
+
+<h4 id="bearish-divergence-signals-blue-arrows">Bearish Divergence Signals (Blue Arrows)</h4>
+
+<p><strong>What It Means:</strong></p>
+
+<ul>
+  <li>Price closing up BUT volume delta negative</li>
+  <li>Institutions selling while price appears strong</li>
+  <li>Hidden distribution happening</li>
+  <li>Resistance likely to form/reject</li>
+</ul>
+
+<p><strong>How to Use for Put Selling:</strong></p>
+
+<p><strong>Blue Arrows Below Your Strike:</strong></p>
+
+<ul>
+  <li>WARNING: Distribution happening at lower prices</li>
+  <li>Support may not hold</li>
+  <li>Skip the trade or select much lower strike</li>
+  <li>High assignment risk</li>
+</ul>
+
+<p><strong>Blue Arrows at Resistance Above:</strong></p>
+
+<ul>
+  <li>Normal distribution at resistance</li>
+  <li>Doesn’t affect put selling below</li>
+  <li>Can be ignored if far above your strike</li>
+</ul>
+
+<h3 id="4-updown-volume-ratio-momentum-and-sentiment">4. Up/Down Volume Ratio (Momentum and Sentiment)</h3>
+
+<h4 id="the-regime-filter">The Regime Filter</h4>
+
+<p><strong>Ratio &gt; 1.5 (Very Bullish):</strong></p>
+
+<ul>
+  <li>✅ Strong buying pressure</li>
+  <li>Uptrend firmly established</li>
+  <li>Can sell puts at current prices</li>
+  <li>Low assignment risk</li>
+  <li>High win rate expected</li>
+</ul>
+
+<p><strong>Ratio 1.0 - 1.5 (Mildly Bullish):</strong></p>
+
+<ul>
+  <li>✅ Moderate buying pressure</li>
+  <li>Healthy environment</li>
+  <li>Sell puts at normal strikes</li>
+  <li>Standard risk/reward</li>
+</ul>
+
+<p><strong>Ratio 0.8 - 1.0 (Neutral to Slightly Bearish):</strong></p>
+
+<ul>
+  <li>⚠️ Balanced to slightly negative</li>
+  <li>Be more selective</li>
+  <li>Sell puts further out of the money</li>
+  <li>Require additional confirmation</li>
+</ul>
+
+<p><strong>Ratio &lt; 0.8 (Bearish):</strong></p>
+
+<ul>
+  <li>❌ Selling pressure dominant</li>
+  <li>High risk environment</li>
+  <li>Only sell puts well below current price</li>
+  <li>Consider skipping altogether</li>
+</ul>
+
+<p><strong>Ratio &lt; 0.5 (Very Bearish):</strong></p>
+
+<ul>
+  <li>❌ Strong selling pressure</li>
+  <li>DO NOT sell puts</li>
+  <li>Wait for ratio to improve above 0.8</li>
+</ul>
+
+<p><strong>Your Screenshot Shows Ratio Rising Toward 1.0+ = IMPROVING CONDITIONS</strong> ✅</p>
+
+<h3 id="5-volume-profile-supportresistance-zones">5. Volume Profile (Support/Resistance Zones)</h3>
+
+<h4 id="high-volume-nodes">High-Volume Nodes</h4>
+
+<ul>
+  <li>Areas with significant historical volume</li>
+  <li>Act as strong support/resistance</li>
+  <li>Institutions have positions at these levels</li>
+</ul>
+
+<p><strong>How to Use for Put Selling:</strong></p>
+
+<p><strong>High-Volume Node Nearby (Within 3-5%):</strong></p>
+
+<ul>
+  <li>✅ Strong support likely</li>
+  <li>Institutions will defend these levels</li>
+  <li>Ideal strike selection zone</li>
+  <li>Very low assignment risk</li>
+</ul>
+
+<p><strong>Low-Volume Area (Gap in profile):</strong></p>
+
+<ul>
+  <li>⚠️ Weak support</li>
+  <li>Price can fall quickly through these zones</li>
+  <li>Avoid setting strikes in low-volume areas</li>
+  <li>Price will seek next high-volume node below</li>
+</ul>
+
+<p><strong>Strike Selection Using Volume Profile:</strong></p>
+
+<ul>
+  <li>Identify nearest high-volume node below current price</li>
+  <li>Sell puts at or just above this node</li>
+  <li>This is where institutions will provide support</li>
+</ul>
+
+<hr />
+
+<h2 id="entry-criteria">Entry Criteria</h2>
+
+<h3 id="the-perfect-setup-all-criteria-met">The Perfect Setup (All Criteria Met)</h3>
+
+<h4 id="score-77-points--excellent-trade">Score: 7/7 Points = Excellent Trade</h4>
+
+<ol>
+  <li>✅ <strong>Daily MA Channel:</strong> Price at or near channel LOW (structural support)</li>
+  <li>✅ <strong>VEI &lt; 1.0:</strong> Market stability confirmed (15-min chart)</li>
+  <li>✅ <strong>Bullish Divergence:</strong> 2-3 purple arrows on daily chart (accumulation)</li>
+  <li>✅ <strong>Up/Dn Ratio &gt; 0.8:</strong> Buying pressure present or improving</li>
+  <li>✅ <strong>Volume Profile:</strong> High-volume node within 3-5% below current price</li>
+  <li>✅ <strong>15-Min Stabilization:</strong> Selling pressure stopped, no further downside momentum</li>
+  <li>✅ <strong>Stock Quality:</strong> Company you’d be happy owning at strike price</li>
+</ol>
+
+<p><strong>Action:</strong> Sell puts aggressively with full position size</p>
+
+<h3 id="good-setup-5-6-points">Good Setup (5-6 Points)</h3>
+
+<h4 id="score-5-67-points--good-trade">Score: 5-6/7 Points = Good Trade</h4>
+
+<ul>
+  <li>Most criteria met, minor weaknesses present</li>
+  <li>Acceptable for standard put selling</li>
+  <li>Use normal position sizing</li>
+  <li>May need to widen strikes for extra safety</li>
+</ul>
+
+<p><strong>Action:</strong> Sell puts with standard position size</p>
+
+<h3 id="marginal-setup-3-4-points">Marginal Setup (3-4 Points)</h3>
+
+<h4 id="score-3-47-points--marginal-trade">Score: 3-4/7 Points = Marginal Trade</h4>
+
+<ul>
+  <li>Several criteria missing or weak</li>
+  <li>Only for experienced traders</li>
+  <li>Reduce position size significantly</li>
+  <li>Require very wide strike margins</li>
+</ul>
+
+<p><strong>Action:</strong> Consider skipping OR sell with 25-50% position size</p>
+
+<h3 id="poor-setup--3-points">Poor Setup (&lt; 3 Points)</h3>
+
+<h4 id="score--37-points--skip-trade">Score: &lt; 3/7 Points = Skip Trade</h4>
+
+<ul>
+  <li>Too many criteria missing</li>
+  <li>High risk of assignment</li>
+  <li>Low probability of success</li>
+</ul>
+
+<p><strong>Action:</strong> SKIP - Wait for better setup</p>
+
+<hr />
+
+<h2 id="position-sizing-rules">Position Sizing Rules</h2>
+
+<h3 id="base-position-size-formula">Base Position Size Formula</h3>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Standard Position = (Account Size × Risk %) / (Stock Price × 100)
+
+Example:
+- Account: $100,000
+- Risk per trade: 5%
+- Stock price: $50
+- Standard size: ($100,000 × 5%) / ($50 × 100) = 1 contract
+</code></pre></div></div>
+
+<h3 id="vei-based-position-sizing-adjustments">VEI-Based Position Sizing Adjustments</h3>
+
+<p><strong>VEI &lt; 0.8 (Very Stable):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Position Size: 100-125% of standard
+
+Example: If standard = 2 contracts, can sell 2-3 contracts
+Reasoning: Market very stable, low risk of volatility expansion
+</code></pre></div></div>
+
+<p><strong>VEI 0.8 - 1.0 (Stable):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Position Size: 100% of standard
+
+Example: If standard = 2 contracts, sell 2 contracts
+Reasoning: Normal conditions, standard risk
+</code></pre></div></div>
+
+<p><strong>VEI 1.0 - 1.2 (Transitional):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Position Size: 50-75% of standard
+
+Example: If standard = 2 contracts, sell 1 contract
+Reasoning: Market less stable, higher risk
+</code></pre></div></div>
+
+<p><strong>VEI &gt; 1.2 (Volatile):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Position Size: 0-25% of standard or skip
+
+Example: If standard = 2 contracts, sell 0-1 contract or skip
+Reasoning: Dangerous conditions, high assignment risk
+</code></pre></div></div>
+
+<h3 id="setup-quality-based-adjustments">Setup Quality-Based Adjustments</h3>
+
+<p><strong>7/7 Point Setup (Perfect):</strong></p>
+
+<ul>
+  <li>Multiply position size by 1.0-1.25x</li>
+  <li>High confidence warranted</li>
+</ul>
+
+<p><strong>5-6 Point Setup (Good):</strong></p>
+
+<ul>
+  <li>Use standard 1.0x position size</li>
+  <li>Normal confidence</li>
+</ul>
+
+<p><strong>3-4 Point Setup (Marginal):</strong></p>
+
+<ul>
+  <li>Multiply position size by 0.25-0.5x</li>
+  <li>Low confidence, high caution</li>
+</ul>
+
+<h3 id="diversification-rules">Diversification Rules</h3>
+
+<p><strong>Maximum Allocation:</strong></p>
+
+<ul>
+  <li>No more than 10-15% of account in any single underlying</li>
+  <li>Maximum 3-5 positions at once (depending on account size)</li>
+  <li>Limit sector concentration (no more than 30% in single sector)</li>
+</ul>
+
+<p><strong>Example Portfolio (100K Account):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Position 1: AAPL - 2 contracts ($10K exposure) = 10%
+Position 2: MSFT - 2 contracts ($10K exposure) = 10%
+Position 3: SPY  - 2 contracts ($10K exposure) = 10%
+Position 4: XLF  - 1 contract ($5K exposure) = 5%
+Total: 7 contracts, ~$35K exposure, 35% deployed
+
+Remaining: $65K cash for:
+- New opportunities
+- Potential assignments
+- Rolling/adjustments
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="strike-selection">Strike Selection</h2>
+
+<h3 id="conservative-approach-recommended-for-most-traders">Conservative Approach (Recommended for Most Traders)</h3>
+
+<p><strong>Target:</strong> 2-5% out of the money (OTM)</p>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Higher win rate (80-90%+)</li>
+  <li>Lower stress</li>
+  <li>Assignment less likely</li>
+  <li>Still decent premium</li>
+</ul>
+
+<p><strong>Strike Selection Process:</strong></p>
+
+<ol>
+  <li>Identify daily MA channel LOW on chart</li>
+  <li>Find nearest volume profile high-volume node</li>
+  <li>Select strike 2-3 points below these levels</li>
+  <li>Confirm strike is 30-45 DTE</li>
+</ol>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Stock: XYZ trading at $50
+Daily Channel Low: $48
+Volume Profile Node: $47.50
+Conservative Strike: $45 or $46 put
+Distance: 8-10% OTM
+Premium: $0.50 - 0.75 per share
+</code></pre></div></div>
+
+<h3 id="moderate-approach-experienced-traders">Moderate Approach (Experienced Traders)</h3>
+
+<p><strong>Target:</strong> At the money (ATM) to 2% OTM</p>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Higher premium collection</li>
+  <li>Still reasonable win rate (70-80%)</li>
+  <li>Good if willing to own stock</li>
+</ul>
+
+<p><strong>Strike Selection Process:</strong></p>
+
+<ol>
+  <li>Use current price or daily channel low as reference</li>
+  <li>Sell puts at or slightly below</li>
+  <li>Ensure bullish divergences present</li>
+  <li>Confirm VEI &lt; 1.0</li>
+</ol>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Stock: XYZ trading at $50
+Daily Channel Low: $48
+Volume Profile Node: $47.50
+Moderate Strike: $48 or $49 put
+Distance: ATM to 4% OTM
+Premium: $1.00 - 1.50 per share
+</code></pre></div></div>
+
+<h3 id="aggressive-approach-high-risk">Aggressive Approach (High Risk)</h3>
+
+<p><strong>Target:</strong> In the money (ITM) or current price</p>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Maximum premium</li>
+  <li>Likely assignment</li>
+  <li>Using put sale as stock accumulation strategy</li>
+</ul>
+
+<p><strong>Strike Selection Process:</strong></p>
+
+<ol>
+  <li>Only use if wanting to own stock at current price</li>
+  <li>Require perfect 7/7 setup</li>
+  <li>Multiple bullish divergences essential</li>
+  <li>VEI must be &lt; 1.0</li>
+</ol>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Stock: XYZ trading at $50
+Daily Channel Low: $48
+Volume Profile Node: $47.50
+Aggressive Strike: $50 or $51 put
+Distance: ATM to ITM
+Premium: $2.00 - 3.00 per share
+
+Outcome: Likely assignment, but at favorable level with accumulation
+</code></pre></div></div>
+
+<h3 id="strike-selection-by-setup-quality">Strike Selection by Setup Quality</h3>
+
+<p><strong>7/7 Point Setup:</strong></p>
+
+<ul>
+  <li>Can use moderate to aggressive strikes</li>
+  <li>ATM to 2% OTM acceptable</li>
+  <li>High confidence in support</li>
+</ul>
+
+<p><strong>5-6 Point Setup:</strong></p>
+
+<ul>
+  <li>Use conservative to moderate strikes</li>
+  <li>2-5% OTM recommended</li>
+  <li>Standard safety margins</li>
+</ul>
+
+<p><strong>3-4 Point Setup:</strong></p>
+
+<ul>
+  <li>Use very conservative strikes</li>
+  <li>5-10% OTM required</li>
+  <li>Only if taking trade at all</li>
+</ul>
+
+<hr />
+
+<h2 id="risk-management">Risk Management</h2>
+
+<h3 id="pre-trade-risk-assessment">Pre-Trade Risk Assessment</h3>
+
+<p><strong>Before Selling ANY Put:</strong></p>
+
+<ol>
+  <li><strong>Would you be happy owning 100 shares at this strike?</strong>
+    <ul>
+      <li>If NO → Don’t sell the put</li>
+      <li>If YES → Proceed with analysis</li>
+    </ul>
+  </li>
+  <li><strong>Do you have the full cash available?</strong>
+    <ul>
+      <li>Must have 100% of strike price × 100 shares</li>
+      <li>Cannot use margin for cash-secured puts (defeats purpose)</li>
+    </ul>
+  </li>
+  <li><strong>Is this a good stock/ETF fundamentally?</strong>
+    <ul>
+      <li>Don’t sell puts on junk just for premium</li>
+      <li>Quality companies only</li>
+      <li>Know the business and sector</li>
+    </ul>
+  </li>
+  <li><strong>Can you handle assignment?</strong>
+    <ul>
+      <li>Assignment means tying up capital</li>
+      <li>Emotional ability to hold underwater position</li>
+      <li>Plan for what to do if assigned</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="position-level-stop-loss-rules">Position-Level Stop Loss Rules</h3>
+
+<p><strong>Hard Rules:</strong></p>
+
+<p><strong>VEI Spike Rule:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IF VEI crosses above 1.5:
+  → Close or roll ALL positions immediately
+  → Market regime has changed to dangerous
+  → Don't wait for further deterioration
+</code></pre></div></div>
+
+<p><strong>Bearish Divergence Rule:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IF 2+ bearish divergences (blue arrows) appear BELOW your strike:
+  → Distribution happening at lower prices
+  → Support likely to fail
+  → Close or roll down/out for credit
+</code></pre></div></div>
+
+<p><strong>Channel Break Rule:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IF price closes below daily channel low:
+  → Structural support broken
+  → Roll down/out OR close position
+  → Don't hold and hope
+</code></pre></div></div>
+
+<p><strong>Up/Dn Ratio Rule:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IF ratio drops below 0.5:
+  → Extreme selling pressure
+  → Roll or close position
+  → Wait for ratio to improve above 0.8
+</code></pre></div></div>
+
+<h3 id="profit-taking-rules">Profit-Taking Rules</h3>
+
+<p><strong>The 50-70% Rule (Recommended):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>When position shows 50-70% of max profit:
+  → Close the position
+  → Don't wait for expiration
+  → Free up capital for new trades
+  → Reduces tail risk
+
+Example:
+- Sold put for $1.00 credit
+- Position now worth $0.30
+- Profit: $0.70 = 70% of max
+- BUY TO CLOSE at $0.30
+</code></pre></div></div>
+
+<p><strong>Time-Based Rule:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>At 7-10 days to expiration (DTE):
+  → If profit &gt; 50%, close position
+  → If profit &lt; 50% but stock above strike, hold
+  → If profit &lt; 50% and stock near/below strike, roll out
+</code></pre></div></div>
+
+<h3 id="maximum-loss-tolerance">Maximum Loss Tolerance</h3>
+
+<p><strong>Per Position:</strong></p>
+
+<ul>
+  <li>Never risk more than 5-10% of account on single position</li>
+  <li>If loss exceeds 2x the premium received, evaluate closing</li>
+  <li>Don’t let single loss spiral out of control</li>
+</ul>
+
+<p><strong>Portfolio Level:</strong></p>
+
+<ul>
+  <li>If multiple positions showing losses simultaneously</li>
+  <li>Reassess overall market conditions</li>
+  <li>Likely VEI spike or regime change</li>
+  <li>Close or adjust entire portfolio if needed</li>
+</ul>
+
+<hr />
+
+<h2 id="exit-and-adjustment-strategies">Exit and Adjustment Strategies</h2>
+
+<h3 id="profit-taking-exits-the-good-scenario">Profit-Taking Exits (The Good Scenario)</h3>
+
+<p><strong>50% Rule (Conservative):</strong></p>
+
+<ul>
+  <li>Close when profit reaches 50% of maximum</li>
+  <li>Typically 15-20 days after entry</li>
+  <li>High win rate, rapid capital turnover</li>
+</ul>
+
+<p><strong>70% Rule (Balanced):</strong></p>
+
+<ul>
+  <li>Close when profit reaches 70% of maximum</li>
+  <li>Typically 7-10 days after entry</li>
+  <li>Balance of win rate and capital efficiency</li>
+</ul>
+
+<p><strong>Let It Expire (Aggressive):</strong></p>
+
+<ul>
+  <li>Hold until expiration for maximum profit</li>
+  <li>Only if VEI stable and no warning signs</li>
+  <li>Highest profit per trade but ties up capital</li>
+</ul>
+
+<h3 id="rolling-strategies-defensive-adjustments">Rolling Strategies (Defensive Adjustments)</h3>
+
+<p><strong>Roll Down and Out (Stock Moving Against You):</strong></p>
+
+<p><strong>Trigger:</strong></p>
+
+<ul>
+  <li>Price approaching your strike</li>
+  <li>Bearish signals appearing</li>
+  <li>Want to collect more premium and avoid assignment</li>
+</ul>
+
+<p><strong>Process:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Original Position:
+- Short $50 put, 15 DTE, currently $0.80 debit to close
+- Stock at $51 (getting close)
+
+Roll:
+- BUY TO CLOSE $50 put at $0.80 (loss)
+- SELL TO OPEN $48 put, 30-45 DTE at $1.20 (credit)
+- Net credit: $0.40
+- New strike 4% lower, new time 30 days out
+</code></pre></div></div>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Collect additional premium</li>
+  <li>Lower strike = more safety margin</li>
+  <li>More time for recovery</li>
+</ul>
+
+<p><strong>Drawbacks:</strong></p>
+
+<ul>
+  <li>Lock in unrealized loss</li>
+  <li>Lower strike = less income if repeated</li>
+</ul>
+
+<p><strong>Roll Out (Time Extension):</strong></p>
+
+<p><strong>Trigger:</strong></p>
+
+<ul>
+  <li>Price near strike but bullish signals improving</li>
+  <li>Don’t want assignment yet</li>
+  <li>Believe support will hold with more time</li>
+</ul>
+
+<p><strong>Process:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Original Position:
+- Short $50 put, 5 DTE, currently $1.50 debit to close
+- Stock at $49.75 (right at strike)
+
+Roll:
+- BUY TO CLOSE $50 put at $1.50 (loss)
+- SELL TO OPEN $50 put, 30 DTE at $2.00 (credit)
+- Net credit: $0.50
+- Same strike, more time
+</code></pre></div></div>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Collect additional premium</li>
+  <li>Give thesis more time to work</li>
+  <li>Avoid assignment this cycle</li>
+</ul>
+
+<p><strong>Drawbacks:</strong></p>
+
+<ul>
+  <li>Still exposed at same strike</li>
+  <li>Kicking the can down the road</li>
+</ul>
+
+<p><strong>Roll Up (Stock Moving in Your Favor):</strong></p>
+
+<p><strong>Trigger:</strong></p>
+
+<ul>
+  <li>Stock rallied significantly above your strike</li>
+  <li>Want to capture more upside potential</li>
+  <li>Can collect more premium at higher strike</li>
+</ul>
+
+<p><strong>Process:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Original Position:
+- Short $50 put, 20 DTE, currently $0.10 to close
+- Stock at $55 (well above strike)
+
+Roll:
+- BUY TO CLOSE $50 put at $0.10
+- SELL TO OPEN $53 put, 30-45 DTE at $1.00
+- Net credit: $0.90
+- Higher strike, more premium
+</code></pre></div></div>
+
+<p><strong>Benefits:</strong></p>
+
+<ul>
+  <li>Capture additional premium</li>
+  <li>Higher strike = better if assigned</li>
+  <li>Participate in upside move</li>
+</ul>
+
+<p><strong>Drawbacks:</strong></p>
+
+<ul>
+  <li>Higher assignment risk (but that’s okay here)</li>
+  <li>May miss opportunity to deploy capital elsewhere</li>
+</ul>
+
+<h3 id="assignment-management">Assignment Management</h3>
+
+<p><strong>If You Get Assigned (You Now Own 100 Shares):</strong></p>
+
+<p><strong>Scenario 1: Assignment at Good Level (With Bullish Signals):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- You sold $48 put on XYZ
+- Assigned 100 shares at $48
+- Stock currently at $47
+- Bullish divergences appearing
+- VEI stable
+- Up/Dn Ratio improving
+
+Action:
+→ HOLD the shares
+→ Begin selling covered calls at $50-52 strike
+→ Collect premium while waiting for recovery
+→ "Wheel strategy" in action
+</code></pre></div></div>
+
+<p><strong>Scenario 2: Assignment at Bad Level (Bearish Breakdown):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- You sold $48 put on XYZ
+- Assigned 100 shares at $48
+- Stock currently at $44
+- Bearish divergences continuing
+- VEI &gt; 1.2 (volatile)
+- Up/Dn Ratio &lt; 0.5 (bearish)
+
+Action:
+→ SELL the shares immediately (take the loss)
+→ Don't hold and hope in broken structure
+→ Preserve capital for better opportunities
+→ This is why we only sell puts on quality stocks
+</code></pre></div></div>
+
+<p><strong>Scenario 3: Assignment in Neutral Market:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- You sold $48 put on XYZ
+- Assigned 100 shares at $48
+- Stock currently at $47.50
+- No clear signals either direction
+- VEI stable
+
+Action:
+→ HOLD the shares
+→ Sell covered calls 2-5% OTM
+→ Collect premium to reduce cost basis
+→ Wait for next clear signal (bullish divergence or bearish break)
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="trade-evaluation-checklist">Trade Evaluation Checklist</h2>
+
+<h3 id="pre-trade-checklist">Pre-Trade Checklist</h3>
+
+<p>Print this and use for EVERY trade:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>TICKER: ___________  DATE: ___________
+
+Daily Chart Analysis:
+[ ] Price at/near daily MA channel low
+[ ] Volume profile support within 5% below
+[ ] 2-3 bullish divergences (purple arrows) present
+[ ] No bearish divergences below potential strike
+
+15-Minute Chart Analysis:
+[ ] VEI &lt; 1.2 (preferably &lt; 1.0)
+[ ] Price stabilizing or reversing
+[ ] No major downside momentum continuing
+
+Volume Analysis:
+[ ] Up/Dn Ratio &gt; 0.8 (preferably &gt; 1.0)
+[ ] Ratio improving or stable
+[ ] Volume supporting current price level
+
+Fundamental Check:
+[ ] Stock/ETF I'd be happy to own
+[ ] Company fundamentals solid
+[ ] No major negative catalysts upcoming (earnings, etc.)
+
+Risk Management:
+[ ] Full cash available for assignment
+[ ] Position size within limits (max 10-15% of account)
+[ ] Strike selected based on support levels
+[ ] Total portfolio exposure under 50%
+
+TOTAL SCORE: _____ / 12
+
+Scoring:
+10-12: Excellent trade - full size
+7-9:   Good trade - standard size
+5-6:   Marginal trade - reduced size or skip
+&lt; 5:   Poor trade - SKIP
+
+TRADE DECISION: [ ] Sell Puts  [ ] Skip
+
+If Selling:
+Strike: _______  DTE: _______  Premium: _______  Qty: _______
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="example-trade-scenarios">Example Trade Scenarios</h2>
+
+<h3 id="example-1-perfect-77-setup">Example 1: Perfect 7/7 Setup</h3>
+
+<p><strong>Ticker:</strong> AAPL
+<strong>Date:</strong> January 25, 2026
+<strong>Current Price:</strong> $185</p>
+
+<p><strong>Daily Chart:</strong></p>
+
+<ul>
+  <li>Price: $185 (at channel low of $184-186)</li>
+  <li>MA Channel: Low at $184, High at $195</li>
+  <li>Bullish Divergences: 3 purple arrows in last 5 days</li>
+  <li>Volume Profile: Massive node at $180-182</li>
+  <li>Up/Dn Ratio: 1.15 (buyers in control)</li>
+</ul>
+
+<p><strong>15-Minute Chart:</strong></p>
+
+<ul>
+  <li>VEI: 0.88 (very stable)</li>
+  <li>Price: Stabilized after pullback</li>
+  <li>Volume Delta: Positive intraday</li>
+</ul>
+
+<p><strong>Fundamental:</strong></p>
+
+<ul>
+  <li>AAPL = quality company</li>
+  <li>No earnings for 3 weeks</li>
+  <li>Happy to own at $180</li>
+</ul>
+
+<p><strong>Setup Score: 7/7</strong> ✅</p>
+
+<p><strong>Trade Execution:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Action: SELL TO OPEN
+Contract: AAPL Feb 28, 2026 $180 Put
+Premium: $2.10 per share = $210 per contract
+Quantity: 2 contracts (within 10% allocation limit)
+Capital Required: $36,000
+Potential Profit: $420 (2.3% return in 34 days)
+
+Strike Rationale:
+- $180 is 2.7% below current price
+- Sits at major volume profile support
+- Well below channel low ($184)
+- Conservative given perfect setup
+
+Position Sizing:
+- VEI &lt; 1.0 = can use full size
+- 7/7 setup = high confidence
+- 2 contracts = reasonable for account size
+</code></pre></div></div>
+
+<p><strong>Management Plan:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Profit Target: Close at 50-70% profit ($0.60-0.90 buyback)
+Stop Loss: If VEI &gt; 1.2 OR price breaks below $180
+Roll Decision: If price at $182 with 10 days left, consider roll
+Assignment Plan: Happy to own at $180, will sell covered calls
+</code></pre></div></div>
+
+<p><strong>Outcome Scenarios:</strong></p>
+
+<p><strong>Scenario A (Most Likely - 85% probability):</strong></p>
+
+<ul>
+  <li>AAPL stays above $180</li>
+  <li>Close at 50% profit in 2 weeks</li>
+  <li>Profit: $210 in 14 days</li>
+</ul>
+
+<p><strong>Scenario B (Possible - 10% probability):</strong></p>
+
+<ul>
+  <li>AAPL drops to $182 near expiration</li>
+  <li>Roll down to $178 for next month, collect $0.80 credit</li>
+  <li>Net credit: $2.90 total, continue trade</li>
+</ul>
+
+<p><strong>Scenario C (Unlikely - 5% probability):</strong></p>
+
+<ul>
+  <li>AAPL breaks down below $180</li>
+  <li>Assigned 200 shares at $180 ($36,000)</li>
+  <li>Sell $185 covered calls next cycle</li>
+  <li>Begin “wheel strategy”</li>
+</ul>
+
+<h3 id="example-2-marginal-47-setup-should-skip">Example 2: Marginal 4/7 Setup (Should Skip)</h3>
+
+<p><strong>Ticker:</strong> TSLA
+<strong>Date:</strong> January 25, 2026
+<strong>Current Price:</strong> $210</p>
+
+<p><strong>Daily Chart:</strong></p>
+
+<ul>
+  <li>Price: $210 (mid-channel, not at low) ❌</li>
+  <li>MA Channel: Low at $200, High at $230</li>
+  <li>Bullish Divergences: Only 1 purple arrow ❌</li>
+  <li>Volume Profile: Node at $195, but that’s 7% away ⚠️</li>
+  <li>Up/Dn Ratio: 0.75 (slightly bearish) ❌</li>
+</ul>
+
+<p><strong>15-Minute Chart:</strong></p>
+
+<ul>
+  <li>VEI: 1.15 (transitional, approaching caution zone) ⚠️</li>
+  <li>Price: Still showing downside momentum ❌</li>
+  <li>Volume Delta: Mixed signals</li>
+</ul>
+
+<p><strong>Fundamental:</strong></p>
+
+<ul>
+  <li>TSLA = volatile, okay to own but risky</li>
+  <li>Earnings in 2 weeks ❌</li>
+</ul>
+
+<p><strong>Setup Score: 4/7</strong> ❌</p>
+
+<h4 id="decision-skip-this-trade">Decision: SKIP THIS TRADE</h4>
+
+<p><strong>Why Skip:</strong></p>
+
+<ol>
+  <li>Price not at support (mid-channel)</li>
+  <li>Only one weak divergence signal</li>
+  <li>Up/Dn Ratio bearish</li>
+  <li>VEI approaching danger zone</li>
+  <li>Earnings catalyst upcoming</li>
+  <li>Still showing downside momentum</li>
+</ol>
+
+<p><strong>Better Plan:</strong></p>
+
+<ul>
+  <li>Wait for price to reach $200 (channel low)</li>
+  <li>Wait for VEI to drop below 1.0</li>
+  <li>Wait for 2-3 bullish divergences to appear</li>
+  <li>Wait for Up/Dn Ratio to improve above 0.8</li>
+  <li>Wait until after earnings</li>
+  <li>THEN re-evaluate</li>
+</ul>
+
+<p><strong>Lesson:</strong> Sometimes the best trade is no trade. Be patient.</p>
+
+<h3 id="example-3-good-67-setup-tradeable">Example 3: Good 6/7 Setup (Tradeable)</h3>
+
+<p><strong>Ticker:</strong> SPY
+<strong>Date:</strong> January 25, 2026
+<strong>Current Price:</strong> $580</p>
+
+<p><strong>Daily Chart:</strong></p>
+
+<ul>
+  <li>Price: $580 (near channel low of $578) ✅</li>
+  <li>MA Channel: Low at $578, High at $595</li>
+  <li>Bullish Divergences: 2 purple arrows ✅</li>
+  <li>Volume Profile: Node at $575 ✅</li>
+  <li>Up/Dn Ratio: 0.95 (neutral, improving) ⚠️</li>
+</ul>
+
+<p><strong>15-Minute Chart:</strong></p>
+
+<ul>
+  <li>VEI: 0.92 (stable) ✅</li>
+  <li>Price: Stabilized ✅</li>
+  <li>Volume Delta: Positive</li>
+</ul>
+
+<p><strong>Fundamental:</strong></p>
+
+<ul>
+  <li>SPY = highest quality, diversified</li>
+  <li>Happy to own ✅</li>
+</ul>
+
+<p><strong>Setup Score: 6/7</strong> ✅ (Good Trade)</p>
+
+<p><strong>Trade Execution:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Action: SELL TO OPEN
+Contract: SPY Feb 21, 2026 $575 Put
+Premium: $4.50 per share = $450 per contract
+Quantity: 1 contract (SPY high price = limit qty)
+Capital Required: $57,500
+Potential Profit: $450 (0.78% return in 27 days)
+
+Strike Rationale:
+- $575 is 0.86% below current price
+- Sits at volume profile support
+- Just below channel low ($578)
+- Conservative given SPY less volatile than stocks
+
+Position Sizing:
+- 6/7 setup = standard size
+- Only 1 contract due to high capital requirement
+- Leaves room for other positions
+</code></pre></div></div>
+
+<p><strong>Management Plan:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Profit Target: Close at 50% profit ($2.25 buyback)
+Stop Loss: If VEI &gt; 1.2 OR breaks below $575
+Expected Hold Time: 10-15 days
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="advanced-techniques">Advanced Techniques</h2>
+
+<h3 id="the-stacking-strategy">The Stacking Strategy</h3>
+
+<p><strong>Concept:</strong> Sell multiple contracts at different strikes to diversify assignment risk</p>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Stock: XYZ at $50
+Channel Low: $48
+Volume Nodes: $47, $45
+
+Instead of selling 3 contracts at $47:
+- Sell 1 contract at $49 (close to current, higher premium)
+- Sell 1 contract at $47 (at channel low, medium premium)
+- Sell 1 contract at $45 (at volume node, lower premium)
+
+Benefits:
+- Diversified risk
+- Average down if assigned
+- Different profit targets
+- More flexible management
+</code></pre></div></div>
+
+<h3 id="the-earnings-play-advanced">The Earnings Play (Advanced)</h3>
+
+<p><strong>Setup:</strong> Sell puts AFTER earnings announcement on quality stocks</p>
+
+<p><strong>Why:</strong></p>
+
+<ul>
+  <li>IV crush after earnings = cheaper put prices</li>
+  <li>Uncertainty removed</li>
+  <li>If earnings good + your signals align = very high probability</li>
+</ul>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Day Before Earnings:
+- MSFT trading at $420
+- $410 put (30 DTE) trading at $8.00
+- Don't sell yet (IV too high)
+
+Day After Earnings:
+- MSFT reports good earnings, stock at $425
+- $410 put (29 DTE) now trading at $3.50
+- Your signals all bullish (7/7 setup)
+
+Action:
+- SELL $410 put at $3.50
+- Lower premium but much lower risk
+- Probability very high
+</code></pre></div></div>
+
+<h3 id="the-pair-trade">The Pair Trade</h3>
+
+<p><strong>Concept:</strong> Sell puts on two correlated instruments for diversification</p>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Both setups are 6/7 quality:
+
+Position 1:
+- Sell QQQ $450 put
+
+Position 2:
+- Sell TQQQ $80 put (leveraged QQQ)
+
+Rationale:
+- Both track Nasdaq
+- But price differently
+- If QQQ holds, TQQQ likely holds
+- Diversified strikes and names
+</code></pre></div></div>
+
+<h3 id="the-ladder-approach-time-diversification">The Ladder Approach (Time Diversification)</h3>
+
+<p><strong>Concept:</strong> Sell puts at different expiration cycles</p>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Stock: XYZ at $50
+
+Week 1:
+- Sell 1 contract, 30 DTE
+
+Week 2:
+- Sell 1 contract, 30 DTE (if setup still good)
+
+Week 3:
+- Sell 1 contract, 30 DTE (if setup still good)
+
+Result:
+- 3 positions at different DTE
+- Weekly profits as positions expire
+- Continuous income stream
+- Diversified timing risk
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="common-mistakes-to-avoid">Common Mistakes to Avoid</h2>
+
+<h3 id="1-selling-puts-when-vei--12">1. Selling Puts When VEI &gt; 1.2</h3>
+
+<p><strong>Mistake:</strong> “The premium is so high, I have to take it!”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Premium high BECAUSE risk is high</li>
+  <li>Volatile markets blow through strikes</li>
+  <li>Assignment risk skyrockets</li>
+  <li>One bad trade can wipe out months of profits</li>
+</ul>
+
+<p><strong>Fix:</strong> Be patient. Wait for VEI &lt; 1.0. Boring markets make money.</p>
+
+<h3 id="2-ignoring-bearish-divergences">2. Ignoring Bearish Divergences</h3>
+
+<p><strong>Mistake:</strong> Seeing blue arrows but selling puts anyway</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Blue arrows = distribution</li>
+  <li>Smart money selling</li>
+  <li>Support likely to fail</li>
+  <li>You’re fighting institutions</li>
+</ul>
+
+<p><strong>Fix:</strong> When you see bearish divergences, SKIP THE TRADE. Wait for bullish divergences.</p>
+
+<h3 id="3-selling-puts-on-junk-for-high-premium">3. Selling Puts on Junk for High Premium</h3>
+
+<p><strong>Mistake:</strong> “This penny stock has $2 premium on a $10 strike!”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>High premium = high risk</li>
+  <li>Junk stocks can go to zero</li>
+  <li>Assignment = stuck with garbage</li>
+  <li>Illiquid options = can’t exit</li>
+</ul>
+
+<p><strong>Fix:</strong> Only sell puts on stocks you’d be HAPPY to own. Quality over premium.</p>
+
+<h3 id="4-holding-to-expiration-for-last-10">4. Holding to Expiration for Last 10%</h3>
+
+<p><strong>Mistake:</strong> “I want every penny of profit”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Tying up capital for minimal gain</li>
+  <li>Tail risk of late market move</li>
+  <li>Opportunity cost of new trades</li>
+  <li>Stress not worth it</li>
+</ul>
+
+<p><strong>Fix:</strong> Close at 50-70% profit. Redeploy capital to new trades. Compound faster.</p>
+
+<h3 id="5-not-having-cash-secured">5. Not Having Cash Secured</h3>
+
+<p><strong>Mistake:</strong> Using margin or “I’ll find the money if assigned”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Assignment can happen anytime</li>
+  <li>Forced liquidation if no cash</li>
+  <li>Defeats “cash-secured” purpose</li>
+  <li>Margin call risk</li>
+</ul>
+
+<p><strong>Fix:</strong> Have 100% of the strike value in cash BEFORE selling the put. No exceptions.</p>
+
+<h3 id="6-over-concentration">6. Over-Concentration</h3>
+
+<p><strong>Mistake:</strong> Selling 10 contracts on single stock</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>One bad setup = huge loss</li>
+  <li>All eggs in one basket</li>
+  <li>Sector risk extreme</li>
+  <li>Recovery difficult</li>
+</ul>
+
+<p><strong>Fix:</strong> Max 10-15% per position. Diversify across 3-5 names. Different sectors.</p>
+
+<h3 id="7-ignoring-the-daily-chart">7. Ignoring the Daily Chart</h3>
+
+<p><strong>Mistake:</strong> Only looking at 15-minute chart for entries</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Missing big picture</li>
+  <li>Don’t see major support/resistance</li>
+  <li>Higher timeframe structure matters more</li>
+  <li>Intraday noise misleads</li>
+</ul>
+
+<p><strong>Fix:</strong> ALWAYS check daily chart first. It’s your strategic view. 15-min is just for timing.</p>
+
+<h3 id="8-falling-in-love-with-a-position">8. Falling in Love with a Position</h3>
+
+<p><strong>Mistake:</strong> “I sold the put, so the stock MUST go up”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Market doesn’t care about your position</li>
+  <li>Confirmation bias blinds you</li>
+  <li>Ignore warning signals</li>
+  <li>Turn small loss into big loss</li>
+</ul>
+
+<p><strong>Fix:</strong> Be objective. If VEI spikes, bearish divergences appear, or structure breaks = EXIT.</p>
+
+<h3 id="9-revenge-trading-after-assignment">9. Revenge Trading After Assignment</h3>
+
+<p><strong>Mistake:</strong> “I got assigned, now I’ll sell closer puts to make it back faster”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Emotional decision making</li>
+  <li>Increased risk when already down</li>
+  <li>Compound losses</li>
+  <li>Death spiral</li>
+</ul>
+
+<p><strong>Fix:</strong> After assignment, take a break. Reassess with clear head. Quality setups only.</p>
+
+<h3 id="10-not-using-a-checklist">10. Not Using a Checklist</h3>
+
+<p><strong>Mistake:</strong> Trading on “feel” or “looks good”</p>
+
+<p><strong>Reality:</strong></p>
+
+<ul>
+  <li>Inconsistent results</li>
+  <li>Forget to check key indicators</li>
+  <li>Emotional decisions</li>
+  <li>Can’t improve without data</li>
+</ul>
+
+<p><strong>Fix:</strong> Use the checklist EVERY TIME. Track your results. Learn from data, not feelings.</p>
+
+<hr />
+
+<h2 id="final-thoughts">Final Thoughts</h2>
+
+<h3 id="the-three-pillars-of-success">The Three Pillars of Success</h3>
+
+<p><strong>1. Discipline:</strong></p>
+
+<ul>
+  <li>Only trade 5-7/7 setups</li>
+  <li>Use the checklist religiously</li>
+  <li>Take profits at 50-70%</li>
+  <li>Cut losses when signals turn</li>
+</ul>
+
+<p><strong>2. Patience:</strong></p>
+
+<ul>
+  <li>Wait for VEI &lt; 1.0</li>
+  <li>Wait for bullish divergences</li>
+  <li>Wait for price at support</li>
+  <li>Sometimes best trade is no trade</li>
+</ul>
+
+<p><strong>3. Risk Management:</strong></p>
+
+<ul>
+  <li>Position sizing by VEI and setup quality</li>
+  <li>Diversification across names</li>
+  <li>Never risk more than can afford</li>
+  <li>Capital preservation &gt; premium collection</li>
+</ul>
+
+<h3 id="the-reality-of-cash-secured-puts">The Reality of Cash-Secured Puts</h3>
+
+<p><strong>Expectations:</strong></p>
+
+<ul>
+  <li>Win rate: 70-90% (if selective)</li>
+  <li>Average return: 1-3% per month</li>
+  <li>Occasional assignments: Normal</li>
+  <li>Drawdowns: 5-15% (well-managed account)</li>
+</ul>
+
+<p><strong>Time Commitment:</strong></p>
+
+<ul>
+  <li>15-30 minutes per day for chart review</li>
+  <li>Check VEI and key indicators</li>
+  <li>Manage existing positions</li>
+  <li>Scan for new opportunities</li>
+</ul>
+
+<p><strong>Psychological Requirements:</strong></p>
+
+<ul>
+  <li>Patience to wait for setups</li>
+  <li>Discipline to follow rules</li>
+  <li>Emotional control during drawdowns</li>
+  <li>Willingness to take small losses</li>
+</ul>
+
+<h3 id="success-metrics-to-track">Success Metrics to Track</h3>
+
+<h4 id="monthly">Monthly</h4>
+
+<ul>
+  <li>Total premium collected</li>
+  <li>Number of trades (quality over quantity)</li>
+  <li>Win rate %</li>
+  <li>Average days in trade</li>
+  <li>Assignments (how many, at what quality levels)</li>
+</ul>
+
+<h4 id="quarterly">Quarterly</h4>
+
+<ul>
+  <li>Return on deployed capital</li>
+  <li>Average VEI of trades taken</li>
+  <li>Setup quality distribution (how many 7/7 vs 5/7, etc.)</li>
+  <li>Sharpe ratio</li>
+  <li>Maximum drawdown</li>
+</ul>
+
+<h4 id="annually">Annually</h4>
+
+<ul>
+  <li>Total return</li>
+  <li>Comparison to buy-and-hold</li>
+  <li>Lessons learned</li>
+  <li>Strategy refinements</li>
+</ul>
+
+<h3 id="continuous-improvement">Continuous Improvement</h3>
+
+<p><strong>Weekly Review:</strong></p>
+
+<ul>
+  <li>What worked this week?</li>
+  <li>What didn’t work?</li>
+  <li>Did I follow my rules?</li>
+  <li>What can I do better?</li>
+</ul>
+
+<p><strong>Monthly Review:</strong></p>
+
+<ul>
+  <li>Review all trades</li>
+  <li>Calculate actual probabilities by setup score</li>
+  <li>Adjust thresholds if needed</li>
+  <li>Refine checklist</li>
+</ul>
+
+<p><strong>Quarterly Review:</strong></p>
+
+<ul>
+  <li>Deep dive into performance</li>
+  <li>Compare to benchmarks</li>
+  <li>Adjust position sizing if needed</li>
+  <li>Identify blind spots</li>
+</ul>
+
+<hr />
+
+<h2 id="quick-reference-card">Quick Reference Card</h2>
+
+<p><strong>Print this and keep by your computer:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>═══════════════════════════════════════════════════
+  CASH-SECURED PUT QUICK REFERENCE
+═══════════════════════════════════════════════════
+
+PRE-TRADE CHECKS:
+☐ VEI &lt; 1.0 (MANDATORY)
+☐ Price at daily channel low
+☐ 2-3 bullish divergences (purple arrows)
+☐ Up/Dn Ratio &gt; 0.8
+☐ Volume profile support nearby
+☐ Stock I'd own
+
+SETUP SCORING:
+7/7 points = Full size, aggressive strikes
+5-6 points = Standard size, normal strikes
+3-4 points = Half size OR skip
+&lt; 3 points = SKIP
+
+POSITION SIZING:
+Max per position: 10-15% of account
+Max total deployed: 50% of account
+Max positions: 3-5 concurrent
+
+STRIKE SELECTION:
+Conservative: 2-5% OTM (at volume nodes)
+Moderate: ATM to 2% OTM
+Aggressive: ITM (only on 7/7 setups)
+
+PROFIT TAKING:
+Close at 50-70% max profit
+Don't hold for last 20-30%
+
+STOP LOSSES:
+VEI &gt; 1.5 → Close ALL positions
+Bearish divergences below strike → Roll or close
+Price breaks channel low → Roll or close
+Up/Dn Ratio &lt; 0.5 → Roll or close
+
+DTE TARGET:
+Entry: 30-45 days
+Exit: 7-10 days (if profitable)
+
+═══════════════════════════════════════════════════
+When in doubt, DON'T TRADE. Patience pays.
+═══════════════════════════════════════════════════
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="additional-resources">Additional Resources</h2>
+
+<h3 id="related-strategy-documents">Related Strategy Documents</h3>
+
+<ul>
+  <li>See <code class="language-plaintext highlighter-rouge">../ma-high-low.md</code> for MA Channel analysis</li>
+  <li>See <code class="language-plaintext highlighter-rouge">../volatility-expansion-index.md</code> for VEI deep dive</li>
+  <li>See <code class="language-plaintext highlighter-rouge">../price-volume-delta-candles.md</code> for divergence patterns</li>
+  <li>See <code class="language-plaintext highlighter-rouge">../up-down-volume-ratio.md</code> for volume regime analysis</li>
+</ul>
+
+<h3 id="recommended-reading-order-for-new-traders">Recommended Reading Order for New Traders</h3>
+
+<ol>
+  <li>Read VEI document first (understand market stability filter)</li>
+  <li>Read MA High/Low document (understand support/resistance structure)</li>
+  <li>Read Price/Volume Delta document (understand accumulation/distribution)</li>
+  <li>Read Up/Down Volume Ratio document (understand momentum regimes)</li>
+  <li>Read this strategy document (put it all together)</li>
+  <li>Practice on paper for 1-2 months before using real money</li>
+  <li>Start with 1-2 positions maximum when going live</li>
+  <li>Scale up only after 3 months of profitable results</li>
+</ol>
+
+<h3 id="study-resources">Study Resources</h3>
+
+<p><strong>Paper Trading:</strong></p>
+
+<ul>
+  <li>Practice entries on TradingView with replay feature</li>
+  <li>Track hypothetical P&amp;L in spreadsheet</li>
+  <li>Follow all rules as if real money</li>
+  <li>Goal: 20+ paper trades with 70%+ win rate before live</li>
+</ul>
+
+<p><strong>Backtesting:</strong></p>
+
+<ul>
+  <li>Review historical charts for setup quality</li>
+  <li>Mark where you would have entered/exited</li>
+  <li>Calculate hypothetical returns</li>
+  <li>Identify patterns in winners vs losers</li>
+</ul>
+
+<p><strong>Position Tracking Template:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Create spreadsheet with columns:
+- Date Opened
+- Ticker
+- Strike
+- DTE
+- Premium Received
+- Setup Score (1-7)
+- VEI at Entry
+- Up/Dn Ratio at Entry
+- Date Closed
+- Days Held
+- Profit/Loss
+- % Return
+- Notes (what worked/didn't)
+</code></pre></div></div>
+
+<hr />
+
+<p><strong>Remember:</strong> The goal is not to sell puts on every ticker, every day. The goal is to sell high-quality puts on high-quality setups, at high-quality prices, with favorable market conditions. Quality over quantity. Patience over action. Discipline over greed.</p>
+
+<p><strong>Trade safely, trade smart, and let the indicators guide you.</strong></p>

@@ -1,3 +1,9 @@
+---
+title: Volatility Expansion Index
+description: Market regime filter comparing short-term and long-term volatility.
+category: indicator
+---
+
 # Volatility Expansion Index (VEI) Analysis
 
 ## Overview

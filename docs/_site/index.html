@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradingView Indicators</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --text: #1f2328;
+      --muted: #656d76;
+      --border: #d0d7de;
+      --link: #0969da;
+      --bg: #ffffff;
+      --card: #f6f8fa;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --link: #58a6ff;
+        --bg: #0d1117;
+        --card: #161b22;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2rem;
+      line-height: 1.25;
+    }
+
+    .subtitle {
+      margin: 0 0 2rem;
+      color: var(--muted);
+    }
+
+    section + section {
+      margin-top: 2.5rem;
+    }
+
+    h2 {
+      margin: 0 0 1rem;
+      font-size: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      padding: 0.875rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+    }
+
+    li + li {
+      margin-top: 0.75rem;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .description {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+
+    footer a {
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TradingView Indicators</h1>
+<p class="subtitle">Custom Pine Script indicators for TradingView, with guides for setup and usage.</p>
+
+<section>
+  <h2>Indicator Guides</h2>
+  <ul>
+    
+    <li>
+      <a href="/trading-view-indicators/ma-high-low.html">MA High/Low</a>
+      
+      <p class="description">Dynamic channel from moving averages of highs and lows with trend analysis.</p>
+      
+    </li>
+    
+    <li>
+      <a href="/trading-view-indicators/orb-with-opportunity-window.html">Opening Range Breakout with Opportunity Window</a>
+      
+      <p class="description">Intraday ORB system for futures with range quality, VWAP, and target projection.</p>
+      
+    </li>
+    
+    <li>
+      <a href="/trading-view-indicators/price-volume-delta-candles.html">Price/Volume Delta Candles</a>
+      
+      <p class="description">Divergence detection between price action and volume delta.</p>
+      
+    </li>
+    
+    <li>
+      <a href="/trading-view-indicators/up-down-volume-ratio.html">Up/Down Volume Ratio</a>
+      
+      <p class="description">Momentum and sentiment tool comparing buying vs. selling volume pressure.</p>
+      
+    </li>
+    
+    <li>
+      <a href="/trading-view-indicators/volatility-expansion-index.html">Volatility Expansion Index</a>
+      
+      <p class="description">Market regime filter comparing short-term and long-term volatility.</p>
+      
+    </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h2>Strategies</h2>
+  <ul>
+    
+    <li>
+      <a href="/trading-view-indicators/strategy/short-put.html">Short Put</a>
+      
+      <p class="description">Options strategy documentation.</p>
+      
+    </li>
+    
+  </ul>
+</section>
+
+<footer>
+  <p>
+    Source code and additional indicators are on
+    <a href="https://github.com/n8rzz/trading-view-indicators">GitHub</a>.
+  </p>
+  <p>These indicators are for educational and analysis purposes only.</p>
+</footer>
+
+  </main>
+</body>
+</html>

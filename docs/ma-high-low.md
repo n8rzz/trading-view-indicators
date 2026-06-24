@@ -1,3 +1,9 @@
+---
+title: MA High/Low
+description: Dynamic channel from moving averages of highs and lows with trend analysis.
+category: indicator
+---
+
 # MA High/Low Indicator Analysis
 
 ## Overview

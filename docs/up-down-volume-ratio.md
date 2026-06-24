@@ -1,3 +1,9 @@
+---
+title: Up/Down Volume Ratio
+description: Momentum and sentiment tool comparing buying vs. selling volume pressure.
+category: indicator
+---
+
 # Up/Down Volume Ratio Indicator Analysis
 
 ## Overview

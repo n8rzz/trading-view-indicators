@@ -1,0 +1,1180 @@
+<h1 id="pricevolume-delta-candles-indicator-analysis">Price/Volume Delta Candles Indicator Analysis</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>The <strong>Price/Volume Delta Candles</strong> indicator is a sophisticated divergence detection tool that reveals hidden accumulation and distribution by comparing what price is doing versus what volume is doing. By analyzing lower timeframe data to calculate volume delta and comparing it to the closing direction, this indicator identifies moments when “smart money” is acting contrary to the obvious price action—often signaling potential reversals or continuation patterns before they become apparent.</p>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ul>
+  <li><a href="#how-this-indicator-works">How This Indicator Works</a>
+    <ul>
+      <li><a href="#core-calculation">Core Calculation</a></li>
+      <li><a href="#divergence-logic">Divergence Logic</a></li>
+      <li><a href="#visual-components">Visual Components</a></li>
+    </ul>
+  </li>
+  <li><a href="#how-traders-can-use-this-to-find-an-edge">How Traders Can Use This to Find an Edge</a>
+    <ul>
+      <li><a href="#1-reversal-signal-detection">Reversal Signal Detection</a></li>
+      <li><a href="#2-trend-continuation-confirmation">Trend Continuation Confirmation</a></li>
+      <li><a href="#3-smart-money-tracking">Smart Money Tracking</a></li>
+      <li><a href="#4-entry-timing-refinement">Entry Timing Refinement</a></li>
+    </ul>
+  </li>
+  <li><a href="#complementary-indicators-and-market-conditions">Complementary Indicators and Market Conditions</a></li>
+  <li><a href="#trading-strategies">Trading Strategies</a></li>
+  <li><a href="#risk-warnings-and-limitations">Risk Warnings and Limitations</a></li>
+  <li><a href="#conclusion">Conclusion</a></li>
+</ul>
+
+<hr />
+
+<h2 id="how-this-indicator-works">How This Indicator Works</h2>
+
+<h3 id="core-calculation">Core Calculation</h3>
+
+<p>The indicator uses a multi-step process to identify price/volume divergences:</p>
+
+<h4 id="step-1-lower-timeframe-volume-analysis"><strong>Step 1: Lower Timeframe Volume Analysis</strong></h4>
+
+<p>The indicator examines lower timeframe bars within each current timeframe bar to classify volume with higher precision:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>For each lower timeframe bar:
+
+  If Close &gt; Open (green candle):
+    → Add volume to Up Volume
+
+  If Close &lt; Open (red candle):
+    → Add volume to Down Volume (as negative)
+
+  If Close = Open (doji) but Close &gt;= Previous Close:
+    → Add volume to Up Volume
+
+  If Close = Open (doji) but Close &lt; Previous Close:
+    → Add volume to Down Volume (as negative)
+</code></pre></div></div>
+
+<p><strong>Why Lower Timeframe?</strong></p>
+
+<ul>
+  <li>More accurate volume classification</li>
+  <li>Captures intra-bar dynamics</li>
+  <li>Reveals accumulation/distribution hidden in higher timeframe bars</li>
+  <li>Example: A 5-minute bar that closes down might contain 4 minutes of buying and 1 minute of selling—this would show in the delta</li>
+</ul>
+
+<h4 id="step-2-aggregate-to-current-timeframe"><strong>Step 2: Aggregate to Current Timeframe</strong></h4>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Up Volume = Sum of all positive volume from lower TF bars
+Down Volume = Sum of all negative volume from lower TF bars
+Volume Delta = Up Volume + Down Volume
+</code></pre></div></div>
+
+<p>Since Down Volume is negative, the delta reveals net pressure:</p>
+
+<ul>
+  <li><strong>Delta &gt; 0</strong>: Net buying pressure (up volume exceeded down volume)</li>
+  <li><strong>Delta &lt; 0</strong>: Net selling pressure (down volume exceeded up volume)</li>
+  <li><strong>Delta ≈ 0</strong>: Balanced buying and selling</li>
+</ul>
+
+<h4 id="step-3-calculate-delta-strength"><strong>Step 3: Calculate Delta Strength</strong></h4>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Delta Percentage = (|Volume Delta| / Total Volume) × 100
+</code></pre></div></div>
+
+<p>This normalizes the delta relative to the bar’s total volume:</p>
+
+<ul>
+  <li><strong>High %</strong>: Strong conviction in one direction</li>
+  <li><strong>Low %</strong>: Weak or balanced volume distribution</li>
+</ul>
+
+<h4 id="step-4-apply-threshold-filter"><strong>Step 4: Apply Threshold Filter</strong></h4>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Meets Threshold = Delta Percentage &gt;= Threshold Setting (default 20%)
+</code></pre></div></div>
+
+<p>Only divergences with sufficient strength trigger signals, filtering out noise.</p>
+
+<h3 id="divergence-logic">Divergence Logic</h3>
+
+<p>The indicator identifies two types of divergences:</p>
+
+<h4 id="bullish-divergence-purple-arrow-downbar"><strong>Bullish Divergence (Purple Arrow Down/Bar)</strong></h4>
+
+<p><strong>Condition:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Price closes DOWN (Close &lt; Previous Close)
+BUT
+Volume Delta is POSITIVE (Net buying pressure)
+AND
+Delta strength &gt;= Threshold
+</code></pre></div></div>
+
+<p><strong>What This Means:</strong></p>
+
+<ul>
+  <li>Price appears weak (closing down)</li>
+  <li>But volume shows buyers were more aggressive</li>
+  <li>Accumulation happening during the down move</li>
+  <li>“Smart money” buying while price drops</li>
+  <li>Potential bullish reversal or trend continuation</li>
+</ul>
+
+<p><strong>Visual Signals:</strong></p>
+
+<ul>
+  <li>Purple arrow pointing DOWN above the bar</li>
+  <li>OR purple candle (if candle coloring enabled)</li>
+</ul>
+
+<p><strong>Why “arrow down” for bullish?</strong> The arrow points to where you might want to buy (down at the bar), not the direction of the prediction.</p>
+
+<h4 id="bearish-divergence-blue-arrow-upbar"><strong>Bearish Divergence (Blue Arrow Up/Bar)</strong></h4>
+
+<p><strong>Condition:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Price closes UP (Close &gt; Previous Close)
+BUT
+Volume Delta is NEGATIVE (Net selling pressure)
+AND
+Delta strength &gt;= Threshold
+</code></pre></div></div>
+
+<p><strong>What This Means:</strong></p>
+
+<ul>
+  <li>Price appears strong (closing up)</li>
+  <li>But volume shows sellers were more aggressive</li>
+  <li>Distribution happening during the up move</li>
+  <li>“Smart money” selling while price rises</li>
+  <li>Potential bearish reversal or exhaustion</li>
+</ul>
+
+<p><strong>Visual Signals:</strong></p>
+
+<ul>
+  <li>Blue arrow pointing UP below the bar</li>
+  <li>OR white candle (if candle coloring enabled)</li>
+</ul>
+
+<p><strong>Why “arrow up” for bearish?</strong> The arrow points to where selling occurred (up at the bar), warning of distribution.</p>
+
+<h3 id="visual-components">Visual Components</h3>
+
+<h4 id="1-shape-markers-default">1. Shape Markers (Default)</h4>
+
+<ul>
+  <li><strong>Purple arrow down</strong> (above bar): Bullish divergence detected</li>
+  <li><strong>Blue arrow up</strong> (below bar): Bearish divergence detected</li>
+  <li>Small size, non-intrusive</li>
+  <li>Can be toggled off</li>
+</ul>
+
+<h4 id="2-candle-coloring-optional">2. Candle Coloring (Optional)</h4>
+
+<ul>
+  <li><strong>Purple candle</strong>: Bullish divergence</li>
+  <li><strong>White candle</strong>: Bearish divergence</li>
+  <li>Overrides normal candle colors</li>
+  <li>More visually prominent than arrows</li>
+  <li>Can be toggled on/off</li>
+</ul>
+
+<h4 id="3-delta-threshold-setting">3. Delta Threshold Setting</h4>
+
+<ul>
+  <li>Adjustable from 0% to 100%</li>
+  <li>Default: 20%</li>
+  <li>Higher = fewer but stronger signals</li>
+  <li>Lower = more signals but more noise</li>
+</ul>
+
+<h4 id="4-lower-timeframe-settings">4. Lower Timeframe Settings</h4>
+
+<ul>
+  <li><strong>Auto mode</strong> (default): Automatically selects appropriate lower TF
+    <ul>
+      <li>Intraday charts → 1-minute bars</li>
+      <li>Daily charts → 5-minute bars</li>
+      <li>Weekly+ charts → 60-minute bars</li>
+    </ul>
+  </li>
+  <li><strong>Custom mode</strong>: Manually specify lower timeframe
+    <ul>
+      <li>Higher TF = more history, less precision</li>
+      <li>Lower TF = more precision, less history</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="how-traders-can-use-this-to-find-an-edge">How Traders Can Use This to Find an Edge</h2>
+
+<h3 id="1-reversal-signal-detection">1. <strong>Reversal Signal Detection</strong></h3>
+
+<p>The primary edge of this indicator is catching reversals before they’re obvious in price.</p>
+
+<h4 id="bullish-reversal-setup"><strong>Bullish Reversal Setup</strong></h4>
+
+<p><strong>Classic Bottom Formation:</strong></p>
+
+<ol>
+  <li><strong>Downtrend in progress</strong> or price pulling back</li>
+  <li><strong>Multiple bullish divergence signals</strong> appear</li>
+  <li>Price making lower lows BUT delta consistently positive</li>
+  <li>Each down bar shows hidden accumulation</li>
+</ol>
+
+<p><strong>Interpretation:</strong></p>
+
+<ul>
+  <li>Sellers pushing price down</li>
+  <li>But buyers absorbing all selling pressure</li>
+  <li>Accumulation phase</li>
+  <li>Reversal likely imminent</li>
+</ul>
+
+<p><strong>Action:</strong></p>
+
+<ul>
+  <li>Look for bullish divergence cluster at support levels</li>
+  <li>Enter long on first bullish price confirmation (higher high, bullish engulfing, etc.)</li>
+  <li>Stop loss below the divergence low</li>
+  <li>Target: Previous resistance or measured move</li>
+</ul>
+
+<p><strong>Example Scenario:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Bar 1: Close down, Delta +60% → Bullish divergence (purple arrow)
+Bar 2: Close down, Delta +45% → Bullish divergence (purple arrow)
+Bar 3: Close down, Delta +75% → Bullish divergence (purple arrow)
+Bar 4: Bullish engulfing → ENTRY SIGNAL
+
+Interpretation: Three consecutive down bars with strong buying pressure.
+Smart money accumulated the entire decline. Rally likely.
+</code></pre></div></div>
+
+<h4 id="bearish-reversal-setup"><strong>Bearish Reversal Setup</strong></h4>
+
+<p><strong>Classic Top Formation:</strong></p>
+
+<ol>
+  <li><strong>Uptrend in progress</strong> or price rallying</li>
+  <li><strong>Multiple bearish divergence signals</strong> appear</li>
+  <li>Price making higher highs BUT delta consistently negative</li>
+  <li>Each up bar shows hidden distribution</li>
+</ol>
+
+<p><strong>Interpretation:</strong></p>
+
+<ul>
+  <li>Buyers pushing price up</li>
+  <li>But sellers more aggressive underneath</li>
+  <li>Distribution phase</li>
+  <li>Reversal likely imminent</li>
+</ul>
+
+<p><strong>Action:</strong></p>
+
+<ul>
+  <li>Look for bearish divergence cluster at resistance levels</li>
+  <li>Exit longs or enter short on first bearish price confirmation</li>
+  <li>Stop loss above the divergence high</li>
+  <li>Target: Previous support or measured move</li>
+</ul>
+
+<p><strong>Example Scenario:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Bar 1: Close up, Delta -55% → Bearish divergence (blue arrow)
+Bar 2: Close up, Delta -70% → Bearish divergence (blue arrow)
+Bar 3: Close up, Delta -40% → Bearish divergence (blue arrow)
+Bar 4: Bearish rejection → EXIT/SHORT SIGNAL
+
+Interpretation: Three consecutive up bars with strong selling pressure.
+Smart money distributed into the rally. Decline likely.
+</code></pre></div></div>
+
+<h3 id="2-trend-continuation-confirmation">2. <strong>Trend Continuation Confirmation</strong></h3>
+
+<p>Divergence signals can also confirm that pullbacks in trends are opportunities, not reversals.</p>
+
+<h4 id="uptrend-pullback-buying-opportunity"><strong>Uptrend Pullback (Buying Opportunity)</strong></h4>
+
+<p><strong>Setup:</strong></p>
+
+<ol>
+  <li>Established uptrend</li>
+  <li>Price pulls back or consolidates</li>
+  <li><strong>Bullish divergence appears on down bars</strong> during the pullback</li>
+  <li>Shows accumulation happening during the dip</li>
+</ol>
+
+<p><strong>Interpretation:</strong></p>
+
+<ul>
+  <li>Healthy pullback, not reversal</li>
+  <li>Buyers stepping in at better prices</li>
+  <li>Institutions adding to positions</li>
+  <li>Trend likely to resume</li>
+</ul>
+
+<p><strong>Action:</strong></p>
+
+<ul>
+  <li>Enter long when bullish divergence appears during pullback</li>
+  <li>Stop below pullback low</li>
+  <li>Target: Trend continuation to new highs</li>
+</ul>
+
+<h4 id="downtrend-rally-selling-opportunity"><strong>Downtrend Rally (Selling Opportunity)</strong></h4>
+
+<p><strong>Setup:</strong></p>
+
+<ol>
+  <li>Established downtrend</li>
+  <li>Price rallies or consolidates</li>
+  <li><strong>Bearish divergence appears on up bars</strong> during the rally</li>
+  <li>Shows distribution happening during the bounce</li>
+</ol>
+
+<p><strong>Interpretation:</strong></p>
+
+<ul>
+  <li>Dead-cat bounce, not reversal</li>
+  <li>Sellers using rally to exit or add shorts</li>
+  <li>Institutions distributing into strength</li>
+  <li>Downtrend likely to resume</li>
+</ul>
+
+<p><strong>Action:</strong></p>
+
+<ul>
+  <li>Enter short or exit longs when bearish divergence appears during rally</li>
+  <li>Stop above rally high</li>
+  <li>Target: Trend continuation to new lows</li>
+</ul>
+
+<h3 id="3-smart-money-tracking">3. <strong>Smart Money Tracking</strong></h3>
+
+<p>The divergence signals reveal institutional behavior hidden from pure price analysis.</p>
+
+<h4 id="accumulation-detection"><strong>Accumulation Detection</strong></h4>
+
+<h5 id="bullish-divergence--accumulation-evidence">Bullish Divergence = Accumulation Evidence</h5>
+
+<p>When you see bullish divergence, it means:</p>
+
+<ul>
+  <li>Large players are <strong>buying aggressively</strong> on down bars</li>
+  <li>They’re willing to absorb all available supply</li>
+  <li>They’re using price weakness to build positions</li>
+  <li>They expect higher prices ahead</li>
+</ul>
+
+<p><strong>Where to Watch:</strong></p>
+
+<ul>
+  <li>At major support levels (accumulation zones)</li>
+  <li>After extended declines (capitulation bottoms)</li>
+  <li>During consolidation patterns (preparation for breakout)</li>
+  <li>At the end of pullbacks in uptrends (adding to winners)</li>
+</ul>
+
+<p><strong>Trading Implication:</strong>
+Join the institutions—buy when they’re buying (even if price looks weak).</p>
+
+<h4 id="distribution-detection"><strong>Distribution Detection</strong></h4>
+
+<h5 id="bearish-divergence--distribution-evidence">Bearish Divergence = Distribution Evidence</h5>
+
+<p>When you see bearish divergence, it means:</p>
+
+<ul>
+  <li>Large players are <strong>selling aggressively</strong> on up bars</li>
+  <li>They’re willing to sell into any buying pressure</li>
+  <li>They’re using price strength to exit positions</li>
+  <li>They expect lower prices ahead</li>
+</ul>
+
+<p><strong>Where to Watch:</strong></p>
+
+<ul>
+  <li>At major resistance levels (distribution zones)</li>
+  <li>After extended rallies (exhaustion tops)</li>
+  <li>During consolidation patterns (preparation for breakdown)</li>
+  <li>During rallies in downtrends (selling into strength)</li>
+</ul>
+
+<p><strong>Trading Implication:</strong>
+Follow the institutions—sell when they’re selling (even if price looks strong).</p>
+
+<h3 id="4-entry-timing-refinement">4. <strong>Entry Timing Refinement</strong></h3>
+
+<p>Use divergence signals to fine-tune entry points for existing setups.</p>
+
+<h4 id="enhancing-supportresistance-trades"><strong>Enhancing Support/Resistance Trades</strong></h4>
+
+<p><strong>At Support:</strong></p>
+
+<ul>
+  <li>Price reaches support level (your setup)</li>
+  <li>Wait for bullish divergence (confirmation)</li>
+  <li>Entry: On divergence + bullish price action</li>
+  <li>Confidence: Much higher than support alone</li>
+</ul>
+
+<p><strong>At Resistance:</strong></p>
+
+<ul>
+  <li>Price reaches resistance level (your setup)</li>
+  <li>Wait for bearish divergence (confirmation)</li>
+  <li>Entry: On divergence + bearish price action</li>
+  <li>Confidence: Much higher than resistance alone</li>
+</ul>
+
+<h4 id="improving-breakout-trades"><strong>Improving Breakout Trades</strong></h4>
+
+<p><strong>Valid Breakout:</strong></p>
+
+<ul>
+  <li>Price breaks resistance</li>
+  <li>No bearish divergence on breakout bar</li>
+  <li>Shows genuine buying pressure</li>
+  <li>Trade the breakout with confidence</li>
+</ul>
+
+<p><strong>False Breakout Warning:</strong></p>
+
+<ul>
+  <li>Price breaks resistance</li>
+  <li><strong>Bearish divergence on breakout bar</strong> (selling into the breakout)</li>
+  <li>Shows distribution, not accumulation</li>
+  <li>Avoid or fade the breakout</li>
+</ul>
+
+<p><strong>Example:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Scenario 1 (Valid):
+- Price breaks above $100 resistance
+- Volume delta +65% (strong buying)
+- No divergence → Trade the breakout
+
+Scenario 2 (False):
+- Price breaks above $100 resistance
+- Volume delta -40% (selling pressure)
+- Bearish divergence signal → Avoid or short
+
+The divergence saved you from a bull trap!
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="complementary-indicators-and-market-conditions">Complementary Indicators and Market Conditions</h2>
+
+<h3 id="1-support-and-resistance">1. <strong>Support and Resistance</strong></h3>
+
+<p><strong>Why:</strong> Divergence signals most powerful at key structural levels</p>
+
+<p><strong>Integration:</strong></p>
+
+<ul>
+  <li><strong>Bullish divergence at major support</strong> = Highest probability long setup</li>
+  <li><strong>Bearish divergence at major resistance</strong> = Highest probability short setup</li>
+  <li><strong>Divergence in middle of nowhere</strong> = Lower priority, wait for structure</li>
+  <li><strong>Multiple divergences testing same level</strong> = Level very likely to hold</li>
+</ul>
+
+<p><strong>Enhanced Setup:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Support Level + Bullish Divergence + Bullish Candle Pattern =
+STRONG BUY SIGNAL
+
+Resistance Level + Bearish Divergence + Bearish Candle Pattern =
+STRONG SELL SIGNAL
+</code></pre></div></div>
+
+<h3 id="2-trend-indicators">2. <strong>Trend Indicators</strong></h3>
+
+<p><strong>Why:</strong> Context determines whether divergence is reversal or continuation</p>
+
+<p><strong>With Your MA High/Low Indicator:</strong></p>
+
+<p><strong>Uptrend (Price above channel):</strong></p>
+
+<ul>
+  <li>Bullish divergence on pullback = Buy signal (continuation)</li>
+  <li>Bearish divergence at channel high = Take profit warning (exhaustion)</li>
+</ul>
+
+<p><strong>Downtrend (Price below channel):</strong></p>
+
+<ul>
+  <li>Bearish divergence on rally = Sell signal (continuation)</li>
+  <li>Bullish divergence at channel low = Cover shorts warning (exhaustion)</li>
+</ul>
+
+<p><strong>Neutral (Price in channel):</strong></p>
+
+<ul>
+  <li>Divergence at channel boundaries = Direction hint for breakout</li>
+  <li>Multiple same-direction divergences = Breakout preparation</li>
+</ul>
+
+<p><strong>With Moving Averages:</strong></p>
+
+<ul>
+  <li>Divergence above rising 50 MA = Pullback buy opportunity</li>
+  <li>Divergence below falling 50 MA = Rally sell opportunity</li>
+  <li>Divergence at MA crossovers = Confirms trend change</li>
+</ul>
+
+<h3 id="3-volume-indicators">3. <strong>Volume Indicators</strong></h3>
+
+<p><strong>Why:</strong> Volume context strengthens divergence interpretation</p>
+
+<p><strong>With Your Up/Down Volume Ratio:</strong></p>
+
+<p><strong>Powerful Combinations:</strong></p>
+
+<ul>
+  <li>Bullish divergence + Ratio rising above 1.0 = Strong buy</li>
+  <li>Bearish divergence + Ratio falling below 1.0 = Strong sell</li>
+  <li>Bullish divergence + Ratio &lt; 1.0 = Weaker signal, use caution</li>
+  <li>Bearish divergence + Ratio &gt; 1.0 = Weaker signal, use caution</li>
+</ul>
+
+<p><strong>Regime Filter:</strong></p>
+
+<ul>
+  <li>Only trade bullish divergences when ratio &gt; 0.8</li>
+  <li>Only trade bearish divergences when ratio &lt; 1.2</li>
+  <li>Divergences more reliable in appropriate volume regimes</li>
+</ul>
+
+<p><strong>With Volume Profile:</strong></p>
+
+<ul>
+  <li>Bullish divergence at high-volume node = Strong support confirmation</li>
+  <li>Bearish divergence at high-volume node = Strong resistance confirmation</li>
+  <li>Divergence at low-volume area = Less reliable, needs more confirmation</li>
+</ul>
+
+<h3 id="4-volatility-indicators">4. <strong>Volatility Indicators</strong></h3>
+
+<p><strong>Why:</strong> Divergence reliability varies with volatility regime</p>
+
+<p><strong>With Your VEI (Volatility Expansion Index):</strong></p>
+
+<p><strong>Best Conditions (VEI &lt; 1.0):</strong></p>
+
+<ul>
+  <li>Divergence signals clean and reliable</li>
+  <li>Structure respected</li>
+  <li>High probability trades</li>
+  <li>Full confidence in signals</li>
+</ul>
+
+<p><strong>Caution Conditions (VEI &gt; 1.2):</strong></p>
+
+<ul>
+  <li>Divergence signals may fail</li>
+  <li>Market chaotic and unpredictable</li>
+  <li>Reduce position size or skip</li>
+  <li>Require additional confirmation</li>
+</ul>
+
+<p><strong>Integration Rule:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IF Divergence Signal + VEI &lt; 1.0:
+  → Take the trade with standard size
+
+IF Divergence Signal + VEI &gt; 1.2:
+  → Skip or reduce size 50%+
+</code></pre></div></div>
+
+<h3 id="5-momentum-oscillators">5. <strong>Momentum Oscillators</strong></h3>
+
+<p><strong>Why:</strong> Adds momentum context to volume divergence</p>
+
+<p><strong>With RSI:</strong></p>
+
+<ul>
+  <li>Bullish divergence + RSI oversold (&lt; 30) = Extremely high probability</li>
+  <li>Bearish divergence + RSI overbought (&gt; 70) = Extremely high probability</li>
+  <li>Bullish divergence + RSI &gt; 50 = Weaker signal</li>
+  <li>Bearish divergence + RSI &lt; 50 = Weaker signal</li>
+</ul>
+
+<p><strong>With MACD:</strong></p>
+
+<ul>
+  <li>Bullish divergence + MACD bullish crossover = Strong confirmation</li>
+  <li>Bearish divergence + MACD bearish crossover = Strong confirmation</li>
+  <li>Divergence before MACD cross = Early warning system</li>
+</ul>
+
+<p><strong>Double Divergence (Holy Grail):</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Price making lower lows
++ Bullish volume divergence (this indicator)
++ RSI making higher lows
+= EXTREMELY HIGH PROBABILITY REVERSAL
+</code></pre></div></div>
+
+<h3 id="6-price-action-patterns">6. <strong>Price Action Patterns</strong></h3>
+
+<p><strong>Why:</strong> Divergence signals best used with price confirmation</p>
+
+<p><strong>Candlestick Confirmation:</strong></p>
+
+<p><strong>For Bullish Divergence:</strong></p>
+
+<ul>
+  <li>Hammer or bullish engulfing after divergence</li>
+  <li>Pin bar rejection off support with divergence</li>
+  <li>Morning star pattern with divergence on first candle</li>
+</ul>
+
+<p><strong>For Bearish Divergence:</strong></p>
+
+<ul>
+  <li>Shooting star or bearish engulfing after divergence</li>
+  <li>Pin bar rejection at resistance with divergence</li>
+  <li>Evening star pattern with divergence on first candle</li>
+</ul>
+
+<p><strong>Chart Pattern Integration:</strong></p>
+
+<ul>
+  <li>Bullish divergence in right shoulder of inverse H&amp;S = High probability</li>
+  <li>Bearish divergence in right shoulder of H&amp;S = High probability</li>
+  <li>Divergence at apex of triangle = Breakout direction hint</li>
+</ul>
+
+<h3 id="7-market-context">7. <strong>Market Context</strong></h3>
+
+<p><strong>Why:</strong> Broader market conditions affect signal reliability</p>
+
+<p><strong>Order Flow Context:</strong></p>
+
+<ul>
+  <li>Divergence + supportive tape reading = Stronger signal</li>
+  <li>Divergence + order book showing size at level = Confirmation</li>
+  <li>Divergence + market depth aligned = Institutional interest</li>
+</ul>
+
+<p><strong>Correlation Analysis:</strong></p>
+
+<ul>
+  <li>Divergence in stock + divergence in sector = Stronger signal</li>
+  <li>Divergence in stock vs sector strength = Weaker signal (swim against current)</li>
+  <li>Divergence across multiple correlated instruments = Market-wide shift</li>
+</ul>
+
+<h3 id="8-time-and-session-analysis">8. <strong>Time and Session Analysis</strong></h3>
+
+<p><strong>Why:</strong> Timing affects divergence signal quality</p>
+
+<p><strong>With Your ORB Indicator:</strong></p>
+
+<ul>
+  <li>Bullish divergence during ORB = Likely upside break</li>
+  <li>Bearish divergence during ORB = Likely downside break</li>
+  <li>Divergence at ORB boundaries = Direction confirmation</li>
+</ul>
+
+<p><strong>Session-Based:</strong></p>
+
+<ul>
+  <li>Divergence during high-volume sessions (London open, NY open) = More reliable</li>
+  <li>Divergence during low-volume periods (Asia session, lunch) = Less reliable</li>
+  <li>Divergence in first hour = Sets tone for day</li>
+  <li>Divergence in last hour = Institutional positioning for next day</li>
+</ul>
+
+<h3 id="9-optimal-market-conditions">9. <strong>Optimal Market Conditions</strong></h3>
+
+<p><strong>Best Conditions for This Indicator:</strong></p>
+
+<p>✅ <strong>Liquid, High-Volume Markets:</strong></p>
+
+<ul>
+  <li>Sufficient volume for meaningful delta calculation</li>
+  <li>Accurate up/down volume classification</li>
+  <li>Major stocks, indices, futures during active hours</li>
+</ul>
+
+<p>✅ <strong>Trending or Mean-Reverting Markets:</strong></p>
+
+<ul>
+  <li>Clear structure for context</li>
+  <li>Defined support/resistance levels</li>
+  <li>Predictable behavior after signals</li>
+</ul>
+
+<p>✅ <strong>Normal Volatility (VEI &lt; 1.2):</strong></p>
+
+<ul>
+  <li>Signals reliable and actionable</li>
+  <li>Stop losses reasonable</li>
+  <li>Structure respected</li>
+</ul>
+
+<p><strong>Avoid Using When:</strong></p>
+
+<p>❌ <strong>Low Volume Conditions:</strong></p>
+
+<ul>
+  <li>After hours, pre-market</li>
+  <li>Holidays, summer doldrums</li>
+  <li>Thinly traded instruments</li>
+  <li>Small sample = unreliable delta</li>
+</ul>
+
+<p>❌ <strong>Extreme Volatility (VEI &gt; 1.5):</strong></p>
+
+<ul>
+  <li>Chaotic price action</li>
+  <li>Signals may fail immediately</li>
+  <li>Institutional flow overwhelmed by panic/euphoria</li>
+</ul>
+
+<p>❌ <strong>News Events:</strong></p>
+
+<ul>
+  <li>During major economic releases</li>
+  <li>Earnings announcements</li>
+  <li>Central bank decisions</li>
+  <li>Volume delta meaningless in panic/euphoria</li>
+</ul>
+
+<hr />
+
+<h2 id="trading-strategies">Trading Strategies</h2>
+
+<h3 id="strategy-1-pure-divergence-reversal">Strategy 1: <strong>Pure Divergence Reversal</strong></h3>
+
+<p><strong>Objective:</strong> Trade reversals signaled by divergence clusters</p>
+
+<p><strong>Entry Rules:</strong></p>
+
+<p><strong>Long Setup:</strong></p>
+
+<ol>
+  <li>Identify downtrend or pullback</li>
+  <li>Wait for 2-3 consecutive bullish divergence signals</li>
+  <li>Divergence must occur at or near support level</li>
+  <li>Enter on first bullish candle after divergence cluster</li>
+  <li>Stop loss: Below divergence low</li>
+</ol>
+
+<p><strong>Short Setup:</strong></p>
+
+<ol>
+  <li>Identify uptrend or rally</li>
+  <li>Wait for 2-3 consecutive bearish divergence signals</li>
+  <li>Divergence must occur at or near resistance level</li>
+  <li>Enter on first bearish candle after divergence cluster</li>
+  <li>Stop loss: Above divergence high</li>
+</ol>
+
+<p><strong>Position Sizing:</strong></p>
+
+<ul>
+  <li>Single divergence bar: 50% normal size</li>
+  <li>2 divergence bars: 75% normal size</li>
+  <li>3+ divergence bars: 100% normal size</li>
+</ul>
+
+<p><strong>Profit Targets:</strong></p>
+
+<ul>
+  <li>T1: 1.5R (50% position)</li>
+  <li>T2: 3R (25% position)</li>
+  <li>T3: Trail stop (25% position)</li>
+</ul>
+
+<h3 id="strategy-2-trend-pullback-entry">Strategy 2: <strong>Trend Pullback Entry</strong></h3>
+
+<p><strong>Objective:</strong> Use divergence to time entries in established trends</p>
+
+<p><strong>Long Setup (Uptrend):</strong></p>
+
+<ol>
+  <li>Confirm uptrend (price above 50 MA, or in upward channel)</li>
+  <li>Wait for pullback (price retraces 38-62%)</li>
+  <li>Bullish divergence appears during pullback</li>
+  <li>Enter long when divergence triggers</li>
+  <li>Stop: Below pullback low</li>
+  <li>Target: Trend continuation to previous high or beyond</li>
+</ol>
+
+<p><strong>Short Setup (Downtrend):</strong></p>
+
+<ol>
+  <li>Confirm downtrend (price below 50 MA, or in downward channel)</li>
+  <li>Wait for rally (price retraces 38-62%)</li>
+  <li>Bearish divergence appears during rally</li>
+  <li>Enter short when divergence triggers</li>
+  <li>Stop: Above rally high</li>
+  <li>Target: Trend continuation to previous low or beyond</li>
+</ol>
+
+<p><strong>Advantages:</strong></p>
+
+<ul>
+  <li>Entering with trend (higher win rate)</li>
+  <li>Divergence confirms pullback is opportunity, not reversal</li>
+  <li>Better risk:reward (entering at retracement)</li>
+</ul>
+
+<h3 id="strategy-3-divergence--structure-confluence">Strategy 3: <strong>Divergence + Structure Confluence</strong></h3>
+
+<p><strong>Objective:</strong> Only trade divergences at key structural levels</p>
+
+<p><strong>Setup Requirements (All Must Be Present):</strong></p>
+
+<p><strong>For Longs:</strong></p>
+
+<ol>
+  <li>✅ Major support level (previous low, Fibonacci, round number)</li>
+  <li>✅ Bullish divergence signal (purple arrow)</li>
+  <li>✅ Additional confirmation (RSI oversold, or Up/Down Ratio rising, or VEI &lt; 1.0)</li>
+  <li>✅ Bullish price action (engulfing, hammer, etc.)</li>
+</ol>
+
+<p><strong>For Shorts:</strong></p>
+
+<ol>
+  <li>✅ Major resistance level (previous high, Fibonacci, round number)</li>
+  <li>✅ Bearish divergence signal (blue arrow)</li>
+  <li>✅ Additional confirmation (RSI overbought, or Up/Down Ratio falling, or VEI &lt; 1.0)</li>
+  <li>✅ Bearish price action (shooting star, engulfing, etc.)</li>
+</ol>
+
+<p><strong>If ANY criterion missing: Skip the trade.</strong></p>
+
+<p><strong>Risk Management:</strong></p>
+
+<ul>
+  <li>Tight stops (just beyond structural level)</li>
+  <li>Large position size acceptable (high probability)</li>
+  <li>Target: Opposite structural level</li>
+</ul>
+
+<h3 id="strategy-4-divergence-cluster-accumulationdistribution">Strategy 4: <strong>Divergence Cluster Accumulation/Distribution</strong></h3>
+
+<p><strong>Objective:</strong> Identify major accumulation/distribution zones</p>
+
+<p><strong>Accumulation Zone (Bottom Building):</strong></p>
+
+<ol>
+  <li>Price in downtrend or after large decline</li>
+  <li>Multiple bullish divergences over several bars/days</li>
+  <li>Each attempt down shows buying pressure</li>
+  <li>Zone of accumulation being established</li>
+</ol>
+
+<p><strong>Action:</strong></p>
+
+<ul>
+  <li>Begin scaling into longs across the zone</li>
+  <li>Average down as divergences appear</li>
+  <li>Wide stop below entire zone</li>
+  <li>Hold for major reversal and trend change</li>
+  <li>Target: Previous highs or measured move</li>
+</ul>
+
+<p><strong>Distribution Zone (Top Building):</strong></p>
+
+<ol>
+  <li>Price in uptrend or after large rally</li>
+  <li>Multiple bearish divergences over several bars/days</li>
+  <li>Each attempt up shows selling pressure</li>
+  <li>Zone of distribution being established</li>
+</ol>
+
+<p><strong>Action:</strong></p>
+
+<ul>
+  <li>Begin scaling into shorts or exiting longs across the zone</li>
+  <li>Average up as divergences appear</li>
+  <li>Wide stop above entire zone</li>
+  <li>Hold for major reversal and trend change</li>
+  <li>Target: Previous lows or measured move</li>
+</ul>
+
+<p><strong>Note:</strong> This is a position trading strategy, not day trading. Requires patience.</p>
+
+<hr />
+
+<h2 id="risk-warnings-and-limitations">Risk Warnings and Limitations</h2>
+
+<h3 id="1-lower-timeframe-data-limitations">1. <strong>Lower Timeframe Data Limitations</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>Requires access to lower timeframe data</li>
+  <li>Some data vendors don’t provide sufficient granularity</li>
+  <li>Historical data may be limited when using very low timeframes</li>
+  <li>Higher timeframe charts have less precision (daily uses 5-min, not 1-min)</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Indicator may not work on all instruments or time periods</li>
+  <li>Historical backtesting limited by data availability</li>
+  <li>Precision varies by chart timeframe</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Use on liquid instruments with complete data</li>
+  <li>Test custom timeframe settings if issues arise</li>
+  <li>Verify data quality before relying on signals</li>
+</ul>
+
+<h3 id="2-not-all-divergences-lead-to-reversals">2. <strong>Not All Divergences Lead to Reversals</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>Divergence shows institutions acting contrary to price</li>
+  <li>But they might be wrong (institutions lose too)</li>
+  <li>Or they might be too early (reversal takes time)</li>
+  <li>Strong trends can override divergence signals</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Some divergence signals will fail</li>
+  <li>Especially in very strong momentum environments</li>
+  <li>Need risk management and confirmation</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Wait for price confirmation before entry</li>
+  <li>Use stop losses consistently</li>
+  <li>Require multiple signals or additional confirmation</li>
+  <li>Filter with VEI and other indicators</li>
+</ul>
+
+<h3 id="3-threshold-setting-critical">3. <strong>Threshold Setting Critical</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>Default 20% threshold is general guidance</li>
+  <li>Too low = too many signals (noise)</li>
+  <li>Too high = too few signals (missing opportunities)</li>
+  <li>Optimal threshold varies by instrument and timeframe</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Default settings may not be optimal for your trading</li>
+  <li>Need customization and testing</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Backtest different threshold levels</li>
+  <li>Start with 20% and adjust based on results</li>
+  <li>Higher volatility instruments may need higher thresholds</li>
+  <li>Lower volatility instruments may need lower thresholds</li>
+</ul>
+
+<h3 id="4-lagging-nature">4. <strong>Lagging Nature</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>Signal appears after the bar closes</li>
+  <li>By then, price may have already moved significantly</li>
+  <li>Can’t catch the absolute low/high</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Entry may be several points away from optimal</li>
+  <li>Risk:reward ratio reduced if chasing</li>
+  <li>Need to wait for pullback after signal</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Use limit orders at logical levels</li>
+  <li>Wait for price to come back to you</li>
+  <li>Don’t chase—let the setup develop</li>
+  <li>Consider entering partial position and adding on confirmation</li>
+</ul>
+
+<h3 id="5-false-signals-in-choppy-markets">5. <strong>False Signals in Choppy Markets</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>During consolidation or range-bound conditions</li>
+  <li>Many small divergences back and forth</li>
+  <li>No meaningful trend to confirm or reverse</li>
+  <li>Noise overwhelming signal</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Win rate drops in choppy conditions</li>
+  <li>Whipsaw trades</li>
+  <li>Frustration and losses</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Filter with VEI (avoid trading when VEI &gt; 1.2)</li>
+  <li>Require trend context or structural level</li>
+  <li>Increase threshold during choppy periods</li>
+  <li>Consider sitting out during consolidation</li>
+</ul>
+
+<h3 id="6-delta-calculation-approximation">6. <strong>Delta Calculation Approximation</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>True delta requires tick-by-tick order flow data</li>
+  <li>This indicator approximates using lower timeframe bars</li>
+  <li>Not as accurate as professional order flow tools</li>
+  <li>Classification method (close vs open, close vs previous) is simplified</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Delta may not perfectly reflect true institutional flow</li>
+  <li>Some aggressive buying/selling may be misclassified</li>
+  <li>Professional traders with Level 2 data have an edge</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Understand this is an approximation, not perfect data</li>
+  <li>Use as one tool among many</li>
+  <li>Combine with price action and other confirmations</li>
+  <li>Consider upgrading to professional order flow tools if serious</li>
+</ul>
+
+<h3 id="7-instrument-specific-behavior">7. <strong>Instrument-Specific Behavior</strong></h3>
+
+<p><strong>Issue:</strong></p>
+
+<ul>
+  <li>Different instruments have different volume characteristics</li>
+  <li>Crypto: 24/7 trading, different session dynamics</li>
+  <li>Forex: No centralized volume (tick volume used)</li>
+  <li>Stocks: Different behaviors by sector and market cap</li>
+  <li>Futures: Roll dates and contract specifics matter</li>
+</ul>
+
+<p><strong>Impact:</strong></p>
+
+<ul>
+  <li>Signal quality varies by instrument type</li>
+  <li>Some markets more reliable than others</li>
+</ul>
+
+<p><strong>Mitigation:</strong></p>
+
+<ul>
+  <li>Test thoroughly on your specific instruments</li>
+  <li>Understand the quirks of your market</li>
+  <li>Adjust settings per instrument if necessary</li>
+</ul>
+
+<hr />
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>The Price/Volume Delta Candles indicator provides a window into <strong>hidden institutional behavior</strong> by revealing when the “smart money” is acting contrary to obvious price action. This edge is invaluable for avoiding traps and catching reversals early.</p>
+
+<h3 id="key-takeaways">Key Takeaways</h3>
+
+<ol>
+  <li><strong>Reveals hidden accumulation and distribution</strong>
+    <ul>
+      <li>Bullish divergence: Buying pressure on down bars (accumulation)</li>
+      <li>Bearish divergence: Selling pressure on up bars (distribution)</li>
+      <li>Shows what institutions are doing vs. what price suggests</li>
+    </ul>
+  </li>
+  <li><strong>Two primary applications:</strong>
+    <ul>
+      <li><strong>Reversal detection</strong>: Catching turns before they’re obvious</li>
+      <li><strong>Continuation confirmation</strong>: Verifying pullbacks are opportunities</li>
+    </ul>
+  </li>
+  <li><strong>Most powerful at structural levels:</strong>
+    <ul>
+      <li>Divergence at support = High probability long</li>
+      <li>Divergence at resistance = High probability short</li>
+      <li>Divergence in middle of nowhere = Lower priority</li>
+    </ul>
+  </li>
+  <li><strong>Requires confirmation:</strong>
+    <ul>
+      <li>Wait for price action confirmation (candle patterns)</li>
+      <li>Combine with volume regime (Up/Down Ratio)</li>
+      <li>Filter with volatility (VEI &lt; 1.2 preferred)</li>
+      <li>Use multiple signals for highest confidence</li>
+    </ul>
+  </li>
+  <li><strong>Cluster signals are strongest:</strong>
+    <ul>
+      <li>Single divergence bar = Possible</li>
+      <li>2-3 consecutive divergences = Probable</li>
+      <li>Multiple divergences at same level = Highly probable</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="the-pricevolume-delta-edge">The Price/Volume Delta Edge</h3>
+
+<p>Most traders only see what price is doing. This indicator reveals what <strong>volume is doing underneath</strong>, often telling a completely different story:</p>
+
+<ul>
+  <li><strong>Price drops, delta positive</strong> = Institutions accumulating (bullish)</li>
+  <li><strong>Price rallies, delta negative</strong> = Institutions distributing (bearish)</li>
+</ul>
+
+<p>This “under the hood” view allows you to:</p>
+
+<ul>
+  <li><strong>Avoid bull traps</strong> (price up, but selling underneath)</li>
+  <li><strong>Avoid bear traps</strong> (price down, but buying underneath)</li>
+  <li><strong>Front-run reversals</strong> (accumulation/distribution before obvious turn)</li>
+  <li><strong>Join institutional flow</strong> (trade with the big players)</li>
+  <li><strong>Improve entry timing</strong> (wait for divergence at key levels)</li>
+</ul>
+
+<p><strong>The real edge:</strong> While retail traders are reacting to price, you’re seeing what institutions are doing—and institutions move markets. By following their flow revealed through volume delta divergence, you’re aligning your trades with the players who have the power to move price in your favor.</p>
+
+<hr />
+
+<p><strong>Best suited for:</strong> Day traders, swing traders, and position traders in liquid markets who want to improve entry timing and catch reversals early. Essential for traders who understand that volume reveals truth while price can deceive. Works best in stocks, futures, and major indices with reliable volume data.</p>
+
+<p><strong>Technical Note:</strong> This indicator uses lower timeframe data (request.security_lower_tf) to approximate order flow. True institutional order flow requires Level 2/Time &amp; Sales data, but this approximation is sufficient for most retail trading applications and provides significant edge over price-only analysis.</p>

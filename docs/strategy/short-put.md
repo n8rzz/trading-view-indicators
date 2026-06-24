@@ -1,3 +1,9 @@
+---
+title: Short Put
+description: Options strategy documentation.
+category: strategy
+---
+
 # Cash-Secured Put Strategy Guide
 
 ## Overview
